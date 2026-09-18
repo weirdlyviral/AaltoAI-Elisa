@@ -1,0 +1,71 @@
+# Field treatment plan. 'class' is the reviewed privacy class;
+# 'treatment' is filled in by the anonymisation step.
+time_start:
+  class: quasi_identifier
+  treatment: TBD
+msisdn:
+  class: direct_identifier
+  treatment: TBD
+imsi:
+  class: direct_identifier
+  treatment: TBD
+imei:
+  class: direct_identifier
+  treatment: TBD
+tp_dl_avg:
+  class: non_identifying
+  treatment: TBD
+tp_ul_avg:
+  class: non_identifying
+  treatment: TBD
+tp_dl_filtered_avg:
+  class: non_identifying
+  treatment: TBD
+cont_rtt_radio_avg:
+  class: non_identifying
+  treatment: TBD
+cont_rtt_internet_avg:
+  class: non_identifying
+  treatment: TBD
+initial_rtt_radio_avg:
+  class: non_identifying
+  treatment: TBD
+tcp_retrans_byte_ratio_downlink_avg:
+  class: non_identifying
+  treatment: TBD
+tcp_retrans_byte_ratio_uplink_avg:
+  class: non_identifying
+  treatment: TBD
+http_response_time_avg:
+  class: non_identifying
+  treatment: TBD
+http_sr_avg:
+  class: non_identifying
+  treatment: TBD
+data_GB_sum:
+  class: non_identifying
+  treatment: TBD
+im_video_GB_sum:
+  class: sensitive_attribute
+  treatment: TBD
+im_audio_GB_sum:
+  class: sensitive_attribute
+  treatment: TBD
+tethering_data_GB_dl_sum:
+  class: sensitive_attribute
+  treatment: TBD
+radio_access_type:
+  class: quasi_identifier
+  treatment: TBD
+province:
+  class: quasi_identifier
+  treatment: TBD
+application_category:
+  class: sensitive_attribute
+  treatment: TBD
+enb:
+  class: quasi_identifier
+  treatment: TBD
+tac:
+  class: quasi_identifier
+  treatment: TBD

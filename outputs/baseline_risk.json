@@ -1,0 +1,148 @@
+{
+  "seed": 42,
+  "context": {
+    "n_rows": 1099340,
+    "n_subscribers": 199195
+  },
+  "R1": {
+    "A": {
+      "qi": [
+        "time_start",
+        "enb"
+      ],
+      "n_groups": 11575,
+      "pct_rows_in_groups_of_1": 0.0171012,
+      "pct_rows_in_groups_lt_5": 0.121346,
+      "min_group_size": 1,
+      "pct_subscribers_with_ge1_unique_row": 0.0943799
+    },
+    "B": {
+      "qi": [
+        "time_start",
+        "enb",
+        "tac"
+      ],
+      "n_groups": 11575,
+      "pct_rows_in_groups_of_1": 0.0171012,
+      "pct_rows_in_groups_lt_5": 0.121346,
+      "min_group_size": 1,
+      "pct_subscribers_with_ge1_unique_row": 0.0943799
+    },
+    "C": {
+      "qi": [
+        "province",
+        "radio_access_type",
+        "application_category",
+        "tac"
+      ],
+      "n_groups": 1089,
+      "pct_rows_in_groups_of_1": 0.0060036,
+      "pct_rows_in_groups_lt_5": 0.0301999,
+      "min_group_size": 1,
+      "pct_subscribers_with_ge1_unique_row": 0.0331334
+    },
+    "D": {
+      "qi": [
+        "time_start",
+        "enb",
+        "radio_access_type",
+        "application_category",
+        "tac"
+      ],
+      "n_groups": 220859,
+      "pct_rows_in_groups_of_1": 8.1669,
+      "pct_rows_in_groups_lt_5": 27.3177,
+      "min_group_size": 1,
+      "pct_subscribers_with_ge1_unique_row": 36.3051
+    }
+  },
+  "R2": {
+    "enb_hour": {
+      "point_definition": "(enb, time_start floored to hour)",
+      "point_columns": [
+        "enb",
+        "_hour"
+      ],
+      "n_distinct_points": 1983,
+      "results": [
+        {
+          "p": 1,
+          "n_eligible_subscribers": 199195,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 0.0
+        },
+        {
+          "p": 2,
+          "n_eligible_subscribers": 194748,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 12.7
+        },
+        {
+          "p": 3,
+          "n_eligible_subscribers": 182300,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 85.8
+        },
+        {
+          "p": 4,
+          "n_eligible_subscribers": 159209,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 99.6
+        }
+      ]
+    },
+    "province_date": {
+      "point_definition": "(province, date)",
+      "point_columns": [
+        "province",
+        "_date"
+      ],
+      "n_distinct_points": 20,
+      "results": [
+        {
+          "p": 1,
+          "n_eligible_subscribers": 199195,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 0.0
+        },
+        {
+          "p": 2,
+          "n_eligible_subscribers": 189648,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 0.0
+        },
+        {
+          "p": 3,
+          "n_eligible_subscribers": 158717,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 0.0
+        },
+        {
+          "p": 4,
+          "n_eligible_subscribers": 109111,
+          "n_sampled": 1000,
+          "pct_uniquely_identified": 0.0
+        }
+      ]
+    }
+  },
+  "R3": {
+    "n_subscribers": 199195,
+    "total_data_GB_per_subscriber": {
+      "p99": 1.0216,
+      "max": 250.819,
+      "pct_above_p99": 1.00003,
+      "pct_unique_when_rounded_to_0_1_GB": 0.0190768
+    },
+    "pct_subscribers_with_any_tethering": 58.2545,
+    "device_model": {
+      "n_distinct_tac": 1,
+      "n_tac_with_lt5_subscribers": 0,
+      "pct_subscribers_in_tac_lt5": 0.0
+    }
+  },
+  "notes": [
+    "tac is constant across the whole dataset, so it adds no separating power to QI sets B/C/D and R3's rare-device measure is structurally zero.",
+    "The extract covers a single date (1 day, 1 distinct hour(s)), so the (province, date) trajectory collapses to province alone."
+  ]
+}

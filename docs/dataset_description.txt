@@ -1,0 +1,34 @@
+Elisa AaltoAI Hackathon 2026 - mock mobile network performance extract
+======================================================================
+
+FABRICATED data. One row = one subscriber's aggregated traffic for one
+application category, in one cell, during one 10-minute reporting bin.
+
+Columns
+-------
+time_start                          Start of the 10-minute reporting bin (stored as epoch seconds in the parquet).
+msisdn                              Subscriber phone number - the subscriber key.
+imsi                                International Mobile Subscriber Identity - the SIM identifier.
+imei                                International Mobile Equipment Identity - the handset serial identifier.
+tp_dl_avg                           Average downlink throughput observed for the bin.
+tp_ul_avg                           Average uplink throughput observed for the bin.
+tp_dl_filtered_avg                  Average downlink throughput after filtering out small/idle samples.
+cont_rtt_radio_avg                  Average continuing round-trip time over the radio leg.
+cont_rtt_internet_avg               Average continuing round-trip time over the internet leg.
+initial_rtt_radio_avg               Average round-trip time of the initial radio handshake.
+tcp_retrans_byte_ratio_downlink_avg Average share of downlink bytes that had to be retransmitted.
+tcp_retrans_byte_ratio_uplink_avg   Average share of uplink bytes that had to be retransmitted.
+http_response_time_avg              Average HTTP response time.
+http_sr_avg                         Average HTTP success rate.
+data_GB_sum                         Total data volume in the bin, in GB.
+im_video_GB_sum                     Total instant-messaging video volume in the bin, in GB.
+im_audio_GB_sum                     Total instant-messaging audio volume in the bin, in GB.
+tethering_data_GB_dl_sum            Total downlink volume attributed to tethering, in GB.
+radio_access_type                   Radio access technology used (small set of categories).
+province                            Administrative region the serving cell sits in.
+application_category                Category of the application generating the traffic.
+enb                                 Serving eNodeB / base-station identifier (shipped as "enb_id").
+
+Derived field
+-------------
+tac                                 Type Allocation Code: first 8 characters of imei; identifies the device model.

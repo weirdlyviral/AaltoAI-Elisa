@@ -1,0 +1,338 @@
+{
+  "n_rows": 1099340,
+  "n_columns": 22,
+  "columns": {
+    "time_start": {
+      "dtype": "datetime64[ns]",
+      "null_rate": 0.0,
+      "n_distinct": 6,
+      "min": "2027-04-30 16:00:00",
+      "max": "2027-04-30 16:50:00",
+      "most_common_gap_seconds": 600.0
+    },
+    "msisdn": {
+      "dtype": "string",
+      "null_rate": 0.0,
+      "n_distinct": 199195,
+      "min_length": 11,
+      "max_length": 12,
+      "mode_length": 12,
+      "share_all_digits": 1.0
+    },
+    "imsi": {
+      "dtype": "string",
+      "null_rate": 0.0,
+      "n_distinct": 199195,
+      "min_length": 15,
+      "max_length": 15,
+      "mode_length": 15,
+      "share_all_digits": 1.0
+    },
+    "imei": {
+      "dtype": "string",
+      "null_rate": 0.0,
+      "n_distinct": 199195,
+      "min_length": 15,
+      "max_length": 15,
+      "mode_length": 15,
+      "share_all_digits": 1.0
+    },
+    "tp_dl_avg": {
+      "dtype": "float64",
+      "null_rate": 0.192684,
+      "n_distinct": 883068,
+      "p1": 0.00703388,
+      "p5": 0.0104601,
+      "p50": 0.057255,
+      "p95": 1.08101,
+      "p99": 5.75873,
+      "min": 0.0,
+      "max": 438.776,
+      "share_zero": 0.00501175
+    },
+    "tp_ul_avg": {
+      "dtype": "float64",
+      "null_rate": 0.23517,
+      "n_distinct": 840801,
+      "p1": 0.00637064,
+      "p5": 0.00888786,
+      "p50": 0.0274064,
+      "p95": 0.0926771,
+      "p99": 0.226734,
+      "min": 0.0,
+      "max": 59.6506,
+      "share_zero": 9.51466e-06
+    },
+    "tp_dl_filtered_avg": {
+      "dtype": "float64",
+      "null_rate": 0.891497,
+      "n_distinct": 119282,
+      "p1": 0.0873248,
+      "p5": 0.517086,
+      "p50": 4.13859,
+      "p95": 23.3483,
+      "p99": 51.6518,
+      "min": 0.000350105,
+      "max": 494.156,
+      "share_zero": 0.0
+    },
+    "cont_rtt_radio_avg": {
+      "dtype": "float64",
+      "null_rate": 0.462853,
+      "n_distinct": 590340,
+      "p1": 19.334,
+      "p5": 29.7911,
+      "p50": 85.413,
+      "p95": 305.254,
+      "p99": 557.503,
+      "min": 0.0,
+      "max": 13096.9,
+      "share_zero": 0.000284501
+    },
+    "cont_rtt_internet_avg": {
+      "dtype": "float64",
+      "null_rate": 0.431325,
+      "n_distinct": 623557,
+      "p1": 6.27045,
+      "p5": 22.3874,
+      "p50": 76.6024,
+      "p95": 245.144,
+      "p99": 499.8,
+      "min": 0.0,
+      "max": 29580.1,
+      "share_zero": 0.00257691
+    },
+    "initial_rtt_radio_avg": {
+      "dtype": "float64",
+      "null_rate": 0.314116,
+      "n_distinct": 753091,
+      "p1": 5.56749,
+      "p5": 10.9955,
+      "p50": 28.6886,
+      "p95": 102.698,
+      "p99": 271.9,
+      "min": 0.0,
+      "max": 94705.9,
+      "share_zero": 0.00123339
+    },
+    "tcp_retrans_byte_ratio_downlink_avg": {
+      "dtype": "float64",
+      "null_rate": 0.0447432,
+      "n_distinct": 1050152,
+      "p1": 4.70836e-07,
+      "p5": 6.08098e-07,
+      "p50": 1.30469e-06,
+      "p95": 0.0827823,
+      "p99": 0.438812,
+      "min": 1.94757e-07,
+      "max": 1.0,
+      "share_zero": 0.0
+    },
+    "tcp_retrans_byte_ratio_uplink_avg": {
+      "dtype": "float64",
+      "null_rate": 0.000359306,
+      "n_distinct": 1098945,
+      "p1": 4.62695e-07,
+      "p5": 5.94656e-07,
+      "p50": 1.19276e-06,
+      "p95": 0.0687584,
+      "p99": 0.466126,
+      "min": 1.95958e-07,
+      "max": 1.0,
+      "share_zero": 0.0
+    },
+    "http_response_time_avg": {
+      "dtype": "float64",
+      "null_rate": 0.0,
+      "n_distinct": 61355,
+      "p1": 0.0,
+      "p5": 0.0,
+      "p50": 0.0,
+      "p95": 0.0470048,
+      "p99": 13.6784,
+      "min": 0.0,
+      "max": 2901840.0,
+      "share_zero": 0.94419
+    },
+    "http_sr_avg": {
+      "dtype": "float64",
+      "null_rate": 0.942616,
+      "n_distinct": 57550,
+      "p1": 0.0,
+      "p5": 0.0,
+      "p50": 0.949839,
+      "p95": 1.36003,
+      "p99": 1.56817,
+      "min": 0.0,
+      "max": 2.23893,
+      "share_zero": 0.0877546
+    },
+    "data_GB_sum": {
+      "dtype": "float64",
+      "null_rate": 0.0,
+      "n_distinct": 1099027,
+      "p1": 2.41321e-07,
+      "p5": 2.44494e-06,
+      "p50": 8.05359e-05,
+      "p95": 0.0151451,
+      "p99": 0.189434,
+      "min": 0.0,
+      "max": 250.819,
+      "share_zero": 0.000285626
+    },
+    "im_video_GB_sum": {
+      "dtype": "float64",
+      "null_rate": 0.0,
+      "n_distinct": 3418,
+      "p1": 0.0,
+      "p5": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "min": 0.0,
+      "max": 4.24088,
+      "share_zero": 0.996892
+    },
+    "im_audio_GB_sum": {
+      "dtype": "float64",
+      "null_rate": 0.0,
+      "n_distinct": 12215,
+      "p1": 0.0,
+      "p5": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.000104897,
+      "min": 0.0,
+      "max": 2.67885,
+      "share_zero": 0.98889
+    },
+    "tethering_data_GB_dl_sum": {
+      "dtype": "float64",
+      "null_rate": 0.0,
+      "n_distinct": 173660,
+      "p1": 0.0,
+      "p5": 0.0,
+      "p50": 0.0,
+      "p95": 0.000362443,
+      "p99": 0.0354309,
+      "min": 0.0,
+      "max": 47.1665,
+      "share_zero": 0.842033
+    },
+    "radio_access_type": {
+      "dtype": "object",
+      "null_rate": 0.0,
+      "n_distinct": 3,
+      "value_counts": {
+        "4G": 815112,
+        "5G": 280992,
+        "2G": 3236
+      }
+    },
+    "province": {
+      "dtype": "object",
+      "null_rate": 0.0,
+      "n_distinct": 20,
+      "value_counts": {
+        "Uusimaa": 443076,
+        "Pirkanmaa": 114289,
+        "Varsinais-Suomi": 84342,
+        "Pohjois-Pohjanmaa": 58910,
+        "Keski-Suomi": 52832,
+        "Pohjois-Savo": 39170,
+        "Kanta-H\u00e4me": 37335,
+        "Etel\u00e4-Pohjanmaa": 34977,
+        "Pohjanmaa": 32123,
+        "P\u00e4ij\u00e4t-H\u00e4me": 29438,
+        "Satakunta": 28709,
+        "Pohjois-Karjala": 28145,
+        "Kymenlaakso": 26179,
+        "Lappi": 24159,
+        "Etel\u00e4-Karjala": 21560,
+        "Etel\u00e4-Savo": 17789,
+        "Kainuu": 10634,
+        "Keski-Pohjanmaa": 9815,
+        "Undefined": 5362,
+        "Unavailable": 496
+      }
+    },
+    "application_category": {
+      "dtype": "object",
+      "null_rate": 0.0,
+      "n_distinct": 25,
+      "value_counts": {
+        "Networking": 139633,
+        "IM": 110949,
+        "Cloud services": 109677,
+        "Social": 108375,
+        "Streaming": 89567,
+        "Other": 80464,
+        "VPN": 79478,
+        "Web": 76154,
+        "CDN": 56756,
+        "Web search": 54274,
+        "Email": 39248,
+        "Analytics": 37763,
+        "Ads": 29754,
+        "File mgmt": 25873,
+        "Updates": 19648,
+        "News": 16552,
+        "Gaming": 12169,
+        "P2P": 4862,
+        "AI": 3832,
+        "Chat": 1155,
+        "Remote access": 1124,
+        "IoT": 802,
+        "Speedtest": 707,
+        "VoIP": 296,
+        "File transfer": 228
+      }
+    },
+    "enb": {
+      "dtype": "object",
+      "null_rate": 0.0,
+      "n_distinct": 1983,
+      "rows_per_enb": {
+        "min": 1.0,
+        "p5": 14.4,
+        "p50": 296.0,
+        "p95": 4014.3,
+        "max": 4611.0
+      },
+      "distinct_msisdn_per_enb": {
+        "min": 1.0,
+        "p5": 14.4,
+        "p50": 296.0,
+        "p95": 3967.2,
+        "max": 4564.0
+      },
+      "n_enb_with_lt5_msisdn": 46
+    }
+  },
+  "structure": {
+    "n_rows": 1099340,
+    "n_msisdn": 199195,
+    "rows_per_msisdn": {
+      "min": 1,
+      "p50": 5.0,
+      "p95": 10.0,
+      "max": 19
+    },
+    "share_msisdn_with_multiple_imsi": 0.0,
+    "share_imsi_with_multiple_msisdn": 0.0,
+    "share_msisdn_with_multiple_imei": 0.0,
+    "tac": {
+      "n_distinct": 1,
+      "msisdn_per_tac": {
+        "min": 199195.0,
+        "p5": 199195.0,
+        "p50": 199195.0,
+        "p95": 199195.0,
+        "max": 199195.0
+      },
+      "n_tac_with_lt5_msisdn": 0
+    },
+    "n_distinct_days": 1,
+    "msisdn_per_day_p50": 199195.0
+  }
+}

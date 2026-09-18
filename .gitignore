@@ -1,0 +1,23 @@
+# Secrets and configuration
+.env
+
+# Raw / derived data - never commit
+*.csv
+*.parquet
+secure/
+data/
+
+# Environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Tooling
+.pytest_cache/
+.DS_Store
+.idea/
+.vscode/
+
+# Generated audit logs (may contain prompt text)
+outputs/llm_calls.jsonl
