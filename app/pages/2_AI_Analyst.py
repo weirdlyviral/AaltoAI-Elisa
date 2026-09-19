@@ -1,11 +1,6 @@
-"""AI Analyst — Mistral-backed Q&A over the aggregate release. Owner: TBD.
-
-Full tool-calling loop (safety.llm_gateway, max 6 steps, query_aggregate as
-the only data tool) is a stretch goal (M6.3) and is not built yet. This page
-wires and proves query_aggregate itself, which is implemented fully.
-Detail lives in docs/specs/m6.md (6.3).
-"""
+"""AI Analyst — chatting with the aggregate data. Owner: TBD."""
 import sys
+import json
 from pathlib import Path
 
 _APP_DIR = Path(__file__).resolve().parent.parent
@@ -14,32 +9,58 @@ if str(_APP_DIR) not in sys.path:
 
 import streamlit as st
 
-from lib import agent, theme
+from lib import components, data, theme
+from lib.agent import run_agent, RefusedQuery
 
 theme.setup_page("AI Analyst", icon="🤖")
-st.caption("Owner: TBD")
 st.write(
-    "Ask Elina-style questions (\"Where is 5G experience worst?\") and get a "
-    "short answer, the table used, and a caveat line (DP noise, suppressed "
-    "cells, means not supported for QoE metrics). The LLM tool-calling loop "
-    "is a stretch goal (M6.3) and is not built yet."
+    "Ask natural language questions about the aggregate network performance. "
+    "The AI agent writes and executes secure pandas queries against the anonymised "
+    "aggregate release to answer you. It cannot access raw data and is blocked "
+    "from seeing any cell with fewer than 10 subscribers."
 )
 
-st.text_input(
-    "Ask a question about the aggregate release",
-    disabled=True,
-    placeholder="e.g. Where is 5G experience worst?",
-)
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-st.subheader("Plumbing check: one hard-coded example query")
-st.caption("filters={'radio_access_type': '5G'}, group_by=['province'], metrics=['tp_dl_avg_median']")
-if st.button("Run example query"):
-    try:
-        table = agent.query_aggregate(
-            filters={"radio_access_type": "5G"},
-            group_by=["province"],
-            metrics=["tp_dl_avg_median"],
-        )
-        st.dataframe(table)
-    except agent.RefusedQuery as exc:
-        st.error(f"Query refused: {exc}")
+# Display chat history
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+        if "chart" in msg and msg["chart"]:
+            st.vega_lite_chart(msg["chart"], use_container_width=True)
+        if "tool_calls" in msg and msg["tool_calls"]:
+            with st.expander("View Agent Queries"):
+                for call in msg["tool_calls"]:
+                    st.code(json.dumps(call, indent=2), language="json")
+
+# Chat input
+if prompt := st.chat_input("Ask a question (e.g. 'Where is 5G video experience worst?')"):
+    # Show user message
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # Call AI agent
+    with st.chat_message("assistant"):
+        with st.spinner("Analyzing aggregate data..."):
+            result = run_agent("analyst", prompt, history=st.session_state.messages)
+            
+        answer = result.get("answer", "No answer provided.")
+        tool_calls = result.get("tool_calls", [])
+        
+        st.markdown(answer)
+        chart = result.get("chart")
+        if chart:
+            st.vega_lite_chart(chart, use_container_width=True)
+        if tool_calls:
+            with st.expander("View Agent Queries"):
+                for call in tool_calls:
+                    st.code(json.dumps(call, indent=2), language="json")
+                    
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": answer,
+            "tool_calls": tool_calls,
+            "chart": chart
+        })

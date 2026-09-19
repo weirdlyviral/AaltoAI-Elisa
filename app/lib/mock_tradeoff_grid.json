@@ -1,20 +1,22 @@
 [
   {
     "_mock": true,
-    "config": {"k": 5, "time_bucket": 15, "area_mode": "enb_tokenised", "epsilon": 0.5},
+    "config": {
+      "k": 5,
+      "time_bucket": 15,
+      "area_mode": "enb_tokenised",
+      "epsilon": 0.5
+    },
     "metrics": {
-      "pct_rows_suppressed": 4.8,
-      "pct_cells_suppressed": 32.0,
-      "coverage_subscribers_pct": 96.0,
-      "a1_worst_off_pct": 8.0,
-      "a1_mean_identification_pct": 3.0,
-      "a2_trajectory_result": "not_runnable",
-      "a3_homogeneity_pct": 12.0,
-      "a5_recovery_pct": 0.0,
-      "a6_attacker_accuracy_pct": 58.0,
-      "u1_headline_pct": 88.0,
-      "u3_bottom10_overlap": 8,
-      "u4_count_error_pct": 12.0
+      "pct_suppressed": 30.0,
+      "coverage": 96.0,
+      "u1_pct_within_5pct": 88.0,
+      "a6_accuracy_pct": 58.0,
+      "a6_bound_pct": 62.0,
+      "a2_linkage_risk_pct": 22.0,
+      "a1_uniqueness_pct": 17.0,
+      "a3_homogeneity_pct": 28.0,
+      "a5_differencing_pct": 35.0
     },
     "criteria": {
       "no_record_isolation": "residual",
@@ -25,44 +27,22 @@
   },
   {
     "_mock": true,
-    "config": {"k": 10, "time_bucket": 15, "area_mode": "enb_tokenised", "epsilon": 1.0},
-    "metrics": {
-      "pct_rows_suppressed": 0.3,
-      "pct_cells_suppressed": 29.6,
-      "coverage_subscribers_pct": 99.5,
-      "a1_worst_off_pct": 4.0,
-      "a1_mean_identification_pct": 2.5,
-      "a2_trajectory_result": "not_runnable",
-      "a3_homogeneity_pct": 6.0,
-      "a5_recovery_pct": 0.0,
-      "a6_attacker_accuracy_pct": 54.0,
-      "u1_headline_pct": 99.6,
-      "u3_bottom10_overlap": 10,
-      "u4_count_error_pct": 7.3
+    "config": {
+      "k": 10,
+      "time_bucket": 15,
+      "area_mode": "enb_tokenised",
+      "epsilon": 1.0
     },
-    "criteria": {
-      "no_record_isolation": "pass",
-      "no_linkage": "pass",
-      "no_inference": "residual"
-    },
-    "releasable": true
-  },
-  {
-    "_mock": true,
-    "config": {"k": 10, "time_bucket": 30, "area_mode": "province", "epsilon": 1.0},
     "metrics": {
-      "pct_rows_suppressed": 0.1,
-      "pct_cells_suppressed": 18.0,
-      "coverage_subscribers_pct": 99.8,
-      "a1_worst_off_pct": 2.0,
-      "a1_mean_identification_pct": 1.0,
-      "a2_trajectory_result": "not_runnable",
-      "a3_homogeneity_pct": 4.0,
-      "a5_recovery_pct": 0.0,
-      "a6_attacker_accuracy_pct": 54.0,
-      "u1_headline_pct": 99.9,
-      "u3_bottom10_overlap": 9,
-      "u4_count_error_pct": 5.0
+      "pct_suppressed": 26.0,
+      "coverage": 99.0,
+      "u1_pct_within_5pct": 99.0,
+      "a6_accuracy_pct": 54.0,
+      "a6_bound_pct": 73.0,
+      "a2_linkage_risk_pct": 5.0,
+      "a1_uniqueness_pct": 4.0,
+      "a3_homogeneity_pct": 10.0,
+      "a5_differencing_pct": 0.0
     },
     "criteria": {
       "no_record_isolation": "pass",
@@ -73,20 +53,48 @@
   },
   {
     "_mock": true,
-    "config": {"k": 20, "time_bucket": 60, "area_mode": "province", "epsilon": 2.0},
+    "config": {
+      "k": 10,
+      "time_bucket": 30,
+      "area_mode": "province",
+      "epsilon": 1.0
+    },
     "metrics": {
-      "pct_rows_suppressed": 0.05,
-      "pct_cells_suppressed": 10.0,
-      "coverage_subscribers_pct": 99.9,
-      "a1_worst_off_pct": 1.0,
-      "a1_mean_identification_pct": 0.5,
-      "a2_trajectory_result": "not_runnable",
-      "a3_homogeneity_pct": 3.0,
-      "a5_recovery_pct": 0.0,
-      "a6_attacker_accuracy_pct": 58.0,
-      "u1_headline_pct": 99.9,
-      "u3_bottom10_overlap": 9,
-      "u4_count_error_pct": 2.0
+      "pct_suppressed": 18.0,
+      "coverage": 99.5,
+      "u1_pct_within_5pct": 99.5,
+      "a6_accuracy_pct": 54.0,
+      "a6_bound_pct": 73.0,
+      "a2_linkage_risk_pct": 3.0,
+      "a1_uniqueness_pct": 2.0,
+      "a3_homogeneity_pct": 8.0,
+      "a5_differencing_pct": 0.0
+    },
+    "criteria": {
+      "no_record_isolation": "pass",
+      "no_linkage": "pass",
+      "no_inference": "pass"
+    },
+    "releasable": true
+  },
+  {
+    "_mock": true,
+    "config": {
+      "k": 20,
+      "time_bucket": 60,
+      "area_mode": "province",
+      "epsilon": 2.0
+    },
+    "metrics": {
+      "pct_suppressed": 10.0,
+      "coverage": 99.9,
+      "u1_pct_within_5pct": 99.9,
+      "a6_accuracy_pct": 58.0,
+      "a6_bound_pct": 88.0,
+      "a2_linkage_risk_pct": 2.0,
+      "a1_uniqueness_pct": 1.0,
+      "a3_homogeneity_pct": 6.0,
+      "a5_differencing_pct": 0.0
     },
     "criteria": {
       "no_record_isolation": "pass",

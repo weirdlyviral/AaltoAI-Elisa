@@ -57,13 +57,37 @@ def test_data_loader_returns_none_for_missing_file():
     assert data.load_release_stats("nonexistent_mode") is None
 
 
-def test_load_tradeoff_grid_falls_back_to_mock():
+def test_load_tradeoff_grid_prefers_the_real_grid():
     from app.lib import data
 
     grid, is_mock = data.load_tradeoff_grid()
     assert grid is not None
+    assert is_mock is False, "the precomputed grid exists, so it must be preferred"
+    assert not any(entry.get("_mock") for entry in grid)
+
+
+def test_load_tradeoff_grid_falls_back_to_mock_when_the_real_grid_is_absent(monkeypatch, tmp_path):
+    from app.lib import data
+
+    monkeypatch.setattr(data, "OUTPUTS_DIR", tmp_path)
+    data.load_tradeoff_grid.clear()
+    try:
+        grid, is_mock = data.load_tradeoff_grid()
+    finally:
+        data.load_tradeoff_grid.clear()
+
     assert is_mock is True
     assert all(entry.get("_mock") for entry in grid)
+
+
+def test_mock_grid_matches_the_real_grid_schema():
+    """The explorer reads metric keys straight off the grid, so a mock with
+    different keys would silently render zeros instead of failing loudly."""
+    real = json.loads((APP_DIR.parent / "outputs" / "tradeoff_grid.json").read_text())
+    mock = json.loads((APP_DIR / "lib" / "mock_tradeoff_grid.json").read_text())
+
+    assert set(mock[0]["metrics"]) == set(real[0]["metrics"])
+    assert set(mock[0]["config"]) == set(real[0]["config"])
 
 
 def test_query_aggregate_refuses_small_cell(monkeypatch):
@@ -210,3 +234,11 @@ def test_identification_probability_above_one_over_k_is_a_fail():
     rows = {row["criterion"]: row for row in verdicts.score_all(risk, k=10)}
 
     assert rows["no_record_isolation"]["record_contextual"]["status"] == verdicts.FAIL
+
+
+def test_tradeoff_grid_passes_the_leak_guard():
+    """Unrounded float repr trips the long-digit rule, so the generator has to
+    round before writing. This caught a real failure on the first import."""
+    from src import safety
+
+    assert safety.check_file(APP_DIR.parent / "outputs" / "tradeoff_grid.json") == []
