@@ -54,6 +54,23 @@ bucket / area mode / epsilon grid), **AI Analyst**, **AI Red Team** (both
 stretch goals, M6.3). See `app/lib/data.py` for the full read-only data
 contract and `docs/specs/m6.md` / `docs/specs/m6_scaffold.md` for the spec.
 
+Before deploying, regenerate `app/static/story/story_data.json` from the
+approved outputs and run the leak guard. Never publish `outputs/releases/`, raw
+data, `.env`, or LLM credentials.
+
+### Full app deployment
+
+Deploy the full Streamlit app from `app/Home.py` using Streamlit Community
+Cloud or another Python-capable host. The walkthrough is embedded directly in
+Streamlit, so no second provider is required. Add the values from
+`.env.example` as server secrets, including `AGGREGATE_RELEASE_URL` pointing
+to a private or signed URL for the approved `aggregate.parquet` release. The
+aggregate release is read in memory and is never committed to this repository.
+
+On Streamlit Community Cloud, choose `app/Home.py` as the app file and use the
+repository root as the working directory. `requirements.txt` already contains
+the runtime dependencies.
+
 ## Safety model
 
 [`src/safety.py`](src/safety.py) is the only component that touches raw data or

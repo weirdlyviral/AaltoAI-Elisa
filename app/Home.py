@@ -14,7 +14,7 @@ if str(_APP_DIR) not in sys.path:
 
 import streamlit as st
 
-from lib import data, theme
+from lib import components, data, theme
 
 theme.setup_page("Anonymity Assessment Studio", icon="🔒", show_title=False)
 
@@ -79,21 +79,9 @@ with cols[2]:
 
 st.write("")
 
-try:
-    from lib import static_server
-
-    story_url = f"{static_server.ensure_static_server()}/story/index.html"
-except OSError:
-    story_url = None
-
-if story_url:
-    st.link_button("▶  Start the story", story_url, type="primary", use_container_width=True)
-    st.caption("Opens in a new tab. Illustrative dots only — no real records are shown.")
-else:
-    st.warning(
-        "Story server unavailable (port already in use by something else). "
-        "Run `python -m app.lib.static_server` separately and reload this page."
-    )
+st.markdown("<div class='aas-section-label'>Walkthrough</div>", unsafe_allow_html=True)
+st.caption("Illustrative dots only — no real records are shown.")
+components.embedded_story()
 
 st.markdown("<div class='aas-section-label'>Tools</div>", unsafe_allow_html=True)
 

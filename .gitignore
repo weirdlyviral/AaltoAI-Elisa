@@ -1,5 +1,6 @@
 # Secrets and configuration
 .env
+.streamlit/secrets.toml
 
 # Raw / derived data - never commit
 *.csv

@@ -7,6 +7,7 @@ by the local static server, which is also what serves the story.
 """
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -24,6 +25,28 @@ RECIPIENT_BADGE_TEXT = (
 )
 
 PROTOTYPE_NOTICE = "Hackathon prototype — not an Elisa product"
+
+
+def _load_hosted_secrets() -> None:
+    """Copy Streamlit Cloud secrets into the environment-based app contract."""
+    names = (
+        "AAS_STORY_URL",
+        "AGGREGATE_RELEASE_URL",
+        "LLM_BASE_URL",
+        "LLM_API_KEY",
+        "LLM_MODEL",
+    )
+    try:
+        secrets = st.secrets
+    except Exception:
+        return
+    try:
+        for name in names:
+            if not os.getenv(name) and name in secrets:
+                os.environ[name] = str(secrets[name])
+    except FileNotFoundError:
+        # Local development and tests commonly have no secrets.toml.
+        return
 
 
 def load_tokens(path: Path = TOKENS_PATH) -> dict[str, str]:
@@ -57,6 +80,7 @@ PALETTE = {
 
 def setup_page(title: str, icon: str = "🔒", show_title: bool = True) -> None:
     st.set_page_config(page_title=f"{title} · {PROJECT_NAME}", page_icon=icon, layout="wide")
+    _load_hosted_secrets()
     _ensure_assets_served()
     _inject_css()
     st.markdown(
@@ -87,12 +111,14 @@ def _inject_css() -> None:
     css = TOKENS_PATH.read_text()
     css_path = ASSETS_DIR / "styles.css"
     if css_path.exists():
-        # styles.css names the default static port for its font URLs.
+        # Local development uses the bundled server; hosted deployments use
+        # the public static story origin for the same vendored fonts.
         from . import static_server
 
-        css += css_path.read_text().replace(
-            "http://127.0.0.1:8765", f"http://{static_server.HOST}:{static_server.PORT}"
-        )
+        static_origin = os.getenv("AAS_STORY_URL", "").strip().rstrip("/")
+        if not static_origin:
+            static_origin = f"http://{static_server.HOST}:{static_server.PORT}"
+        css += css_path.read_text().replace("http://127.0.0.1:8765", static_origin)
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 

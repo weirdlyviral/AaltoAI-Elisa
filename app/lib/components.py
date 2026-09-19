@@ -54,5 +54,39 @@ def html_block(path_or_str: str, height: int = 300) -> None:
     st.components.v1.html(content, height=height, scrolling=True)
 
 
+def embedded_story(height: int = 900) -> None:
+    """Render the scrollytelling story inside the Streamlit app.
+
+    All assets are bundled into the component so the hosted app needs no
+    second static server or public story URL.
+    """
+    static_dir = Path(__file__).resolve().parents[1] / "static"
+    story_dir = static_dir / "story"
+    body = (story_dir / "index.html").read_text().split("<body>", 1)[1].split("</body>", 1)[0]
+    tokens = (static_dir / "tokens.css").read_text()
+    styles = (story_dir / "story.css").read_text().replace(
+        '@import url("../vendor/fonts/fonts.css");', ""
+    )
+    d3 = (static_dir / "vendor" / "d3.v7.min.js").read_text()
+    scrollama = (static_dir / "vendor" / "scrollama.min.js").read_text()
+    story_js = (story_dir / "story.js").read_text()
+    story_data = (story_dir / "story_data.json").read_text()
+    content = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>{tokens}\n{styles}</style>
+</head>
+<body>
+{body}
+<script>{d3}</script>
+<script>{scrollama}</script>
+<script>window.__storyData = {story_data};</script>
+<script>{story_js}</script>
+</body>
+</html>"""
+    st.components.v1.html(content, height=height, scrolling=True)
+
+
 def pending(what: str) -> None:
     st.info(f"⏳ Pending: {what} not available yet.")
