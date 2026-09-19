@@ -83,6 +83,9 @@ def setup_page(
     icon: str = "🔒",
     show_title: bool = True,
     show_sidebar: bool = False,
+    show_nav: bool = True,
+    show_header: bool = True,
+    show_footer: bool = True,
 ) -> None:
     st.set_page_config(page_title=f"{title} · {PROJECT_NAME}", page_icon=icon, layout="wide")
     _load_hosted_secrets()
@@ -91,20 +94,24 @@ def setup_page(
     if not show_sidebar:
         st.markdown(
             "<style>[data-testid='stSidebar'], [data-testid='collapsedControl'] "
-            "{ display: none !important; }</style>",
+            "{ display: none !important; }"
+            " [data-testid='stHeader'] { display: none !important; }</style>",
             unsafe_allow_html=True,
         )
-    _render_nav()
-    st.markdown(
-        f"<div class='aas-header'>"
-        f"<span class='aas-title'>{PROJECT_NAME}</span>"
-        f"<span class='aas-tagline'>{TAGLINE}</span>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-    if show_title:
-        st.title(title)
-    _render_footer_badge()
+    if show_nav:
+        _render_nav()
+    if show_header:
+        st.markdown(
+            f"<div class='aas-header'>"
+            f"<span class='aas-title'>{PROJECT_NAME}</span>"
+            f"<span class='aas-tagline'>{TAGLINE}</span>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        if show_title:
+            st.title(title)
+    if show_footer:
+        _render_footer_badge()
 
 
 def _render_nav() -> None:

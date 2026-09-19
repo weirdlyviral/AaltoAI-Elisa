@@ -10,6 +10,23 @@ import streamlit as st
 
 from lib import components, theme
 
-theme.setup_page("Anonymisation Walkthrough", icon="▶️", show_sidebar=False)
-st.caption("Illustrative dots only — no real records are shown.")
-components.embedded_story(height=1200)
+theme.setup_page(
+        "Anonymisation Walkthrough",
+        icon="▶️",
+        show_sidebar=False,
+        show_nav=False,
+        show_header=False,
+        show_footer=False,
+)
+st.markdown(
+        """<style>
+        [data-testid="stAppViewContainer"] > .main { padding-top: 0 !important; }
+        [data-testid="stAppViewBlockContainer"] {
+            max-width: none !important;
+            padding: 0 !important;
+        }
+        [data-testid="stDecoration"] { display: none !important; }
+        </style>""",
+        unsafe_allow_html=True,
+)
+components.embedded_story(height=1500)
