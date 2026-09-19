@@ -136,8 +136,29 @@ Quirks that shape everything:
   - **Membership-inference-lite:** for sampled subscribers, compare the aggregate
     computed with and without them and report distinguishability at the chosen
     epsilon. This is what turns "epsilon = 1.0" into a number a reviewer can read.
-- **M4 Utility metric: TODO.** e.g. median download throughput per province ×
-  access type × app category within 5% of raw for ≥90% of groups.
+- **M4 Utility metric: DONE (branch `m4-utility`, not merged).** Spec:
+  `docs/specs/m4.md`. `src/utility.py` -> `outputs/utility_eval.json`,
+  `docs/utility.md`. Reads published releases + raw; touches neither
+  `src/anonymise.py` nor `config/release.yaml`. Wasserstein, KS and Spearman are
+  implemented on numpy (scipy is not an allowed dependency).
+  **HEADLINE: median `tp_dl_avg` is within 5% of raw for 99.92% of the 2,642
+  published cells (target >= 90%) -> PASS.** All five U1 metrics are >= 96.8%.
+  Coverage: 99.60% of raw rows, 99.99% of raw subscribers. Province ranking
+  survives (Spearman 0.997 for both `tp_dl_avg` and `http_sr_avg`); the bottom-10
+  worst cells are preserved 10/10 (Jaccard 1.0), 5G-only too.
+  Counts at the deployed epsilon 1.0: median relative error 0.28%, p90 5.3%.
+  **Two findings for M3/M5 to act on:**
+  1. Top-coding at the 0.99 quantile **severely degrades 6 metrics** (mean moves
+     >= 25%): `im_video_GB_sum` -100%, `http_response_time_avg` -98%,
+     `im_audio_GB_sum` -99%, `tethering_data_GB_dl_sum` -89%, `data_GB_sum` -54%,
+     `tp_dl_avg` -26%. On columns that are mostly zeros the p99 cap sits at or
+     near zero and flattens the column outright. Medians survive, so U1 looks
+     healthy while any question about totals or averages does not. The earlier
+     M2 code took p99 over non-zero values only; the current code does not.
+  2. Suppression is **not evenly distributed**: 2G retains 81.6% of rows against
+     99.8% for 4G, and the thinnest provinces retain ~97.4% against 99.96% for
+     Uusimaa ("Unavailable" retains 48.2%). Threshold methods cost the thin
+     strata most, which is the known rural / rare-technology weakness.
 - **M5 Risk narrative & docs: TODO.** Risk register, row-level docs,
   data-handling statement, limitations.
 - **M6 Bonus prototype: only if M0–M5 green.** "Service quality explorer" on anonymised data.

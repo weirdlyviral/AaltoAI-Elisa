@@ -1,0 +1,542 @@
+{
+  "generated": "2026-09-19T09:03:33.127752+00:00",
+  "seed": 42,
+  "inputs": {
+    "aggregate_release": "outputs/releases/aggregate.parquet",
+    "record_release": "outputs/releases/record.parquet",
+    "release_stats": "outputs/release_stats.json",
+    "config": {
+      "k": 10,
+      "time_bucket_minutes": 15,
+      "area_mode": "enb_tokenised",
+      "min_subscribers_per_area": 10,
+      "rare_category_min_subscribers": 10,
+      "numeric_winsorise": [
+        0.01,
+        0.99
+      ],
+      "numeric_round_sig_figs": 3,
+      "volume_top_code_quantile": 0.99,
+      "aggregate_min_subscribers_per_cell": 10,
+      "dp_epsilon": 1.0
+    }
+  },
+  "raw_baseline": {
+    "rows_in": 1099340,
+    "subscribers_in": 199195,
+    "time_bucket_minutes": 15,
+    "native_window_minutes": 10
+  },
+  "U1": {
+    "cells_scored": 2642,
+    "tolerance_pct": 5.0,
+    "target_pct": 90.0,
+    "baseline_note": "Raw is the baseline: 100% of cells match raw by definition.",
+    "headline_metric": "tp_dl_avg",
+    "headline_statistic": "median",
+    "headline_pct_within_5pct": 99.9211,
+    "headline_pass": true,
+    "per_metric": {
+      "tp_dl_avg": {
+        "median": {
+          "n": 2535,
+          "median": 0.000610437,
+          "p90": 0.00214534,
+          "mean": 0.00354014,
+          "pct_within_5pct": 99.9211
+        },
+        "p10": {
+          "n": 2535,
+          "median": 0.000819735,
+          "p90": 0.00252182,
+          "mean": 0.00487663,
+          "pct_within_5pct": 99.9211
+        },
+        "p90": {
+          "n": 2562,
+          "median": 0.0011578,
+          "p90": 0.0045929,
+          "mean": 4.32546,
+          "pct_within_5pct": 93.4817
+        }
+      },
+      "tp_ul_avg": {
+        "median": {
+          "n": 2590,
+          "median": 0.000857737,
+          "p90": 0.00265359,
+          "mean": 5.76189,
+          "pct_within_5pct": 96.834
+        },
+        "p10": {
+          "n": 2590,
+          "median": 0.00114793,
+          "p90": 0.00399176,
+          "mean": 13.0893,
+          "pct_within_5pct": 96.7954
+        },
+        "p90": {
+          "n": 2590,
+          "median": 0.000748756,
+          "p90": 0.0771911,
+          "mean": 2.10929,
+          "pct_within_5pct": 89.6139
+        }
+      },
+      "cont_rtt_radio_avg": {
+        "median": {
+          "n": 2537,
+          "median": 0.000453209,
+          "p90": 0.00241159,
+          "mean": 0.0021216,
+          "pct_within_5pct": 99.6847
+        },
+        "p10": {
+          "n": 2537,
+          "median": 0.00068247,
+          "p90": 0.00172341,
+          "mean": 0.0040347,
+          "pct_within_5pct": 99.1328
+        },
+        "p90": {
+          "n": 2537,
+          "median": 0.00124489,
+          "p90": 0.00333939,
+          "mean": 0.00592288,
+          "pct_within_5pct": 98.0292
+        }
+      },
+      "http_response_time_avg": {
+        "median": {
+          "n": 9,
+          "median": 0.000837682,
+          "p90": 0.00359526,
+          "mean": 0.00165518,
+          "pct_within_5pct": 100.0
+        },
+        "p10": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "mean": null,
+          "pct_within_5pct": null
+        },
+        "p90": {
+          "n": 428,
+          "median": 0.000874855,
+          "p90": 0.306217,
+          "mean": 0.0754763,
+          "pct_within_5pct": 87.3832
+        }
+      },
+      "http_sr_avg": {
+        "median": {
+          "n": 1513,
+          "median": 0.000474367,
+          "p90": 0.00346466,
+          "mean": 0.00139447,
+          "pct_within_5pct": 99.7356
+        },
+        "p10": {
+          "n": 1366,
+          "median": 0.000437661,
+          "p90": 0.00184721,
+          "mean": 0.000935396,
+          "pct_within_5pct": 99.8536
+        },
+        "p90": {
+          "n": 1594,
+          "median": 0.00162584,
+          "p90": 0.00468464,
+          "mean": 0.00298438,
+          "pct_within_5pct": 99.3099
+        }
+      }
+    }
+  },
+  "U2": {
+    "pct_rows_covered": 99.6038,
+    "pct_subscribers_covered": 99.995,
+    "by_province": {
+      "Etel\u00e4-Karjala": {
+        "pct_rows_covered": 99.1048,
+        "pct_subscribers_covered": 99.173
+      },
+      "Etel\u00e4-Pohjanmaa": {
+        "pct_rows_covered": 99.4453,
+        "pct_subscribers_covered": 99.494
+      },
+      "Etel\u00e4-Savo": {
+        "pct_rows_covered": 98.6284,
+        "pct_subscribers_covered": 98.6916
+      },
+      "Kainuu": {
+        "pct_rows_covered": 97.508,
+        "pct_subscribers_covered": 97.6259
+      },
+      "Kanta-H\u00e4me": {
+        "pct_rows_covered": 99.4697,
+        "pct_subscribers_covered": 99.5305
+      },
+      "Keski-Pohjanmaa": {
+        "pct_rows_covered": 97.3917,
+        "pct_subscribers_covered": 97.4182
+      },
+      "Keski-Suomi": {
+        "pct_rows_covered": 99.6006,
+        "pct_subscribers_covered": 99.6638
+      },
+      "Kymenlaakso": {
+        "pct_rows_covered": 99.1864,
+        "pct_subscribers_covered": 99.2552
+      },
+      "Lappi": {
+        "pct_rows_covered": 99.0728,
+        "pct_subscribers_covered": 99.1227
+      },
+      "Pirkanmaa": {
+        "pct_rows_covered": 99.7874,
+        "pct_subscribers_covered": 99.84
+      },
+      "Pohjanmaa": {
+        "pct_rows_covered": 99.3151,
+        "pct_subscribers_covered": 99.3771
+      },
+      "Pohjois-Karjala": {
+        "pct_rows_covered": 99.3107,
+        "pct_subscribers_covered": 99.3332
+      },
+      "Pohjois-Pohjanmaa": {
+        "pct_rows_covered": 99.6995,
+        "pct_subscribers_covered": 99.7398
+      },
+      "Pohjois-Savo": {
+        "pct_rows_covered": 99.5405,
+        "pct_subscribers_covered": 99.5656
+      },
+      "P\u00e4ij\u00e4t-H\u00e4me": {
+        "pct_rows_covered": 99.2798,
+        "pct_subscribers_covered": 99.332
+      },
+      "Satakunta": {
+        "pct_rows_covered": 99.2685,
+        "pct_subscribers_covered": 99.3315
+      },
+      "Unavailable": {
+        "pct_rows_covered": 48.1855,
+        "pct_subscribers_covered": 48.2828
+      },
+      "Undefined": {
+        "pct_rows_covered": 93.9948,
+        "pct_subscribers_covered": 94.0943
+      },
+      "Uusimaa": {
+        "pct_rows_covered": 99.9614,
+        "pct_subscribers_covered": 99.986
+      },
+      "Varsinais-Suomi": {
+        "pct_rows_covered": 99.7961,
+        "pct_subscribers_covered": 99.8389
+      }
+    },
+    "by_radio_access_type": {
+      "2G": {
+        "pct_rows_covered": 81.5822,
+        "pct_subscribers_covered": 81.6142
+      },
+      "4G": {
+        "pct_rows_covered": 99.7749,
+        "pct_subscribers_covered": 99.9852
+      },
+      "5G": {
+        "pct_rows_covered": 99.3149,
+        "pct_subscribers_covered": 99.6929
+      }
+    }
+  },
+  "U3": {
+    "province_rank_spearman_tp_dl_avg": {
+      "n_provinces": 20,
+      "spearman": 0.996992
+    },
+    "province_rank_spearman_http_sr_avg": {
+      "n_provinces": 20,
+      "spearman": 0.996992
+    },
+    "bottom_cells_all": {
+      "scope": "all cells",
+      "n_cells": 2642,
+      "bottom_n": 10,
+      "overlap": 10,
+      "jaccard": 1.0
+    },
+    "bottom_cells_5g": {
+      "scope": "5G cells only",
+      "n_cells": 1189,
+      "bottom_n": 10,
+      "overlap": 10,
+      "jaccard": 1.0
+    }
+  },
+  "U4": {
+    "stats_source": "outputs/release_stats.json",
+    "deployed_epsilon": 1.0,
+    "deployed_noise_scale": 1.0,
+    "assumed_sensitivity": 1,
+    "deployed_median_rel_error": 0.00279141,
+    "deployed_p90_rel_error": 0.0534774,
+    "note": "Released counts are compared against true counts recomputed from raw on the published cells. The curve re-noises those true counts in memory; it never re-publishes anything.",
+    "curve": [
+      {
+        "epsilon": 0.5,
+        "noise_scale": 2.0,
+        "median_rel_error": 0.00986853,
+        "p90_rel_error": 0.0967742
+      },
+      {
+        "epsilon": 1.0,
+        "noise_scale": 1.0,
+        "median_rel_error": 0.00279141,
+        "p90_rel_error": 0.0534774
+      },
+      {
+        "epsilon": 2.0,
+        "noise_scale": 0.5,
+        "median_rel_error": 0.0,
+        "p90_rel_error": 0.025641
+      }
+    ]
+  },
+  "U5": {
+    "metrics": {
+      "tp_dl_avg": {
+        "wasserstein": 0.0904706,
+        "ks_statistic": 0.00999983,
+        "pct_change_mean": -25.9555,
+        "pct_change_p50": 0.0786322,
+        "pct_change_p95": -0.093151,
+        "pct_change_p99": -0.325313,
+        "share_zero_raw": 0.00501175,
+        "share_zero_released": 0.0,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": true
+      },
+      "tp_ul_avg": {
+        "wasserstein": 0.00555888,
+        "ks_statistic": 0.00999634,
+        "pct_change_mean": -13.0136,
+        "pct_change_p50": -0.0234555,
+        "pct_change_p95": -0.191071,
+        "pct_change_p99": -0.764959,
+        "share_zero_raw": 9.51466e-06,
+        "share_zero_released": 0.0,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": false
+      },
+      "tp_dl_filtered_avg": {
+        "wasserstein": 0.339747,
+        "ks_statistic": 0.0100015,
+        "pct_change_mean": -4.63485,
+        "pct_change_p50": 0.0341095,
+        "pct_change_p95": -0.20676,
+        "pct_change_p99": -0.613425,
+        "share_zero_raw": 0.0,
+        "share_zero_released": 0.0,
+        "flags": [],
+        "tail_flagged": false,
+        "severely_degraded": false
+      },
+      "cont_rtt_radio_avg": {
+        "wasserstein": 2.65947,
+        "ks_statistic": 0.00997617,
+        "pct_change_mean": -2.09302,
+        "pct_change_p50": -0.0151823,
+        "pct_change_p95": -0.083065,
+        "pct_change_p99": 0.0890742,
+        "share_zero_raw": 0.000284501,
+        "share_zero_released": 0.0,
+        "flags": [],
+        "tail_flagged": false,
+        "severely_degraded": false
+      },
+      "cont_rtt_internet_avg": {
+        "wasserstein": 5.7896,
+        "ks_statistic": 0.0100005,
+        "pct_change_mean": -5.44284,
+        "pct_change_p50": -0.00314306,
+        "pct_change_p95": -0.0585632,
+        "pct_change_p99": -0.160038,
+        "share_zero_raw": 0.00257691,
+        "share_zero_released": 0.0,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": false
+      },
+      "initial_rtt_radio_avg": {
+        "wasserstein": 7.70788,
+        "ks_statistic": 0.0100117,
+        "pct_change_mean": -16.2633,
+        "pct_change_p50": 0.0397037,
+        "pct_change_p95": 0.294112,
+        "pct_change_p99": 0.0366169,
+        "share_zero_raw": 0.00123339,
+        "share_zero_released": 0.0,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": false
+      },
+      "tcp_retrans_byte_ratio_downlink_avg": {
+        "wasserstein": 0.00396814,
+        "ks_statistic": 0.0100281,
+        "pct_change_mean": -19.7356,
+        "pct_change_p50": 0.406724,
+        "pct_change_p95": 0.14222,
+        "pct_change_p99": 0.0427305,
+        "share_zero_raw": 0.0,
+        "share_zero_released": 0.0,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": false
+      },
+      "tcp_retrans_byte_ratio_uplink_avg": {
+        "wasserstein": 0.00373822,
+        "ks_statistic": 0.0100624,
+        "pct_change_mean": -20.4048,
+        "pct_change_p50": -0.231798,
+        "pct_change_p95": 0.0605465,
+        "pct_change_p99": -0.0269314,
+        "share_zero_raw": 0.0,
+        "share_zero_released": 0.0,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": false
+      },
+      "http_response_time_avg": {
+        "wasserstein": 10.6329,
+        "ks_statistic": 0.00999418,
+        "pct_change_mean": -98.0421,
+        "pct_change_p50": null,
+        "pct_change_p95": 1.4791,
+        "pct_change_p99": 0.157658,
+        "share_zero_raw": 0.94419,
+        "share_zero_released": 0.944101,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": true
+      },
+      "http_sr_avg": {
+        "wasserstein": 0.00270916,
+        "ks_statistic": 0.00989142,
+        "pct_change_mean": -0.0536524,
+        "pct_change_p50": 0.0169934,
+        "pct_change_p95": -0.00242936,
+        "pct_change_p99": 0.11667,
+        "share_zero_raw": 0.0877546,
+        "share_zero_released": 0.0871361,
+        "flags": [],
+        "tail_flagged": false,
+        "severely_degraded": false
+      },
+      "data_GB_sum": {
+        "wasserstein": 0.00556461,
+        "ks_statistic": 0.0100324,
+        "pct_change_mean": -53.8191,
+        "pct_change_p50": 0.327871,
+        "pct_change_p95": 0.362484,
+        "pct_change_p99": -0.228973,
+        "share_zero_raw": 0.000285626,
+        "share_zero_released": 0.000281984,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": true
+      },
+      "im_video_GB_sum": {
+        "wasserstein": 0.000140713,
+        "ks_statistic": 0.00310823,
+        "pct_change_mean": -100.0,
+        "pct_change_p50": null,
+        "pct_change_p95": null,
+        "pct_change_p99": null,
+        "share_zero_raw": 0.996892,
+        "share_zero_released": 1.0,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": true
+      },
+      "im_audio_GB_sum": {
+        "wasserstein": 7.82859e-05,
+        "ks_statistic": 0.00999964,
+        "pct_change_mean": -98.6035,
+        "pct_change_p50": null,
+        "pct_change_p95": null,
+        "pct_change_p99": 0.0980839,
+        "share_zero_raw": 0.98889,
+        "share_zero_released": 0.988857,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": true
+      },
+      "tethering_data_GB_dl_sum": {
+        "wasserstein": 0.00434637,
+        "ks_statistic": 0.0100033,
+        "pct_change_mean": -88.7726,
+        "pct_change_p50": null,
+        "pct_change_p95": -0.122309,
+        "pct_change_p99": -0.0873201,
+        "share_zero_raw": 0.842033,
+        "share_zero_released": 0.842182,
+        "flags": [
+          "mean"
+        ],
+        "tail_flagged": true,
+        "severely_degraded": true
+      }
+    },
+    "tail_flagged_metrics": [
+      "cont_rtt_internet_avg",
+      "data_GB_sum",
+      "http_response_time_avg",
+      "im_audio_GB_sum",
+      "im_video_GB_sum",
+      "initial_rtt_radio_avg",
+      "tcp_retrans_byte_ratio_downlink_avg",
+      "tcp_retrans_byte_ratio_uplink_avg",
+      "tethering_data_GB_dl_sum",
+      "tp_dl_avg",
+      "tp_ul_avg"
+    ],
+    "severely_degraded_metrics": [
+      "data_GB_sum",
+      "http_response_time_avg",
+      "im_audio_GB_sum",
+      "im_video_GB_sum",
+      "tethering_data_GB_dl_sum",
+      "tp_dl_avg"
+    ],
+    "flag_threshold_pct": 5.0,
+    "severe_threshold_pct": 25.0,
+    "note": "tail_flagged marks metrics where the mean, p95 or p99 moved by at least 5.0%. severely_degraded marks metrics whose mean moved by at least 25.0%: on a sparse or heavily skewed column, top-coding at a quantile that sits at or near zero removes essentially all of the signal."
+  }
+}
