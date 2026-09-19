@@ -31,6 +31,7 @@ PALETTE = {
 
 def setup_page(title: str, icon: str = "🔒", show_title: bool = True) -> None:
     st.set_page_config(page_title=f"{title} · {PROJECT_NAME}", page_icon=icon, layout="wide")
+    _ensure_assets_served()
     _inject_css()
     st.markdown(
         f"<div class='aas-header'>"
@@ -42,6 +43,17 @@ def setup_page(title: str, icon: str = "🔒", show_title: bool = True) -> None:
     if show_title:
         st.title(title)
     _render_footer_badge()
+
+
+def _ensure_assets_served() -> None:
+    """The vendored fonts come from the local static server. Start it from any
+    page, not just Home, so deep-linking a tool page doesn't lose the type."""
+    try:
+        from . import static_server
+
+        static_server.ensure_static_server()
+    except OSError:
+        pass  # port taken by something else; fonts fall back to the system stack
 
 
 def _inject_css() -> None:
