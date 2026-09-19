@@ -144,11 +144,11 @@ scatter = alt.Chart(df_grid).mark_point(filled=True).encode(
     y=alt.Y('risk:Q', title=f'Risk ({selected_y_label} %)', scale=alt.Scale(zero=False)),
     color=alt.Color(
         'releasable:N',
-        scale=alt.Scale(domain=['Yes', 'No'], range=['#3ddc97', '#ff6b6b']),
+        scale=alt.Scale(domain=['Yes', 'No'], range=[theme.PALETTE['pass'], theme.PALETTE['fail']]),
         legend=alt.Legend(title='Releasable'),
     ),
     size=alt.condition('datum.is_selected', alt.value(400), alt.value(110)),
-    stroke=alt.condition('datum.is_selected', alt.value('#e8eefb'), alt.value('transparent')),
+    stroke=alt.condition('datum.is_selected', alt.value(theme.PALETTE['text']), alt.value('transparent')),
     strokeWidth=alt.condition('datum.is_selected', alt.value(2), alt.value(0)),
     tooltip=['k', 'epsilon', 'time_bucket', 'area_mode', 'utility', 'risk', 'releasable'],
     opacity=alt.condition(selection, alt.value(1), alt.value(0.35)),
