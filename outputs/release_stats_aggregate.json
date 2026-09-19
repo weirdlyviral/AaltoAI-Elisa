@@ -15,7 +15,8 @@
     "volume_top_code_quantile": 0.99,
     "aggregate_min_subscribers_per_cell": 10,
     "dp_epsilon": 1.0,
-    "max_cells_per_subscriber": 11
+    "max_cells_per_subscriber": 11,
+    "contribution_cap_enforced": false
   },
   "time_bucket": {
     "time_bucket_minutes": 15,

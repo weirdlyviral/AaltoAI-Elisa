@@ -250,5 +250,72 @@
   "r2_1": 0.0,
   "r2_2": 12.7,
   "r2_3": 85.8,
-  "r2_4": 99.6
+  "r2_4": 99.6,
+  "baseline_unique_pct": 99.6,
+  "controls_evidenced": 10,
+  "controls_total": 10,
+  "criteria_met": 3,
+  "criteria_total": 3,
+  "compliance_rows": [
+    {
+      "requirement": "Pseudonymisation is not enough (GDPR Recital 26)",
+      "control": "Identifiers dropped AND attributes generalised; 99.6% remained unique after ID removal",
+      "evidence_tag": "MEASURED",
+      "evidence": ["outputs/baseline_risk.json"]
+    },
+    {
+      "requirement": "Data minimisation (Art. 5(1)(c))",
+      "control": "Only the 4 grouping dimensions + QoE and volume fields; device code, cell IDs and row counts removed",
+      "evidence_tag": "DOCUMENTED",
+      "evidence": ["docs/transformations.md"]
+    },
+    {
+      "requirement": "Location data (917/2014)",
+      "control": "Cell IDs never published; province level only",
+      "evidence_tag": "DOCUMENTED",
+      "evidence": ["docs/transformations_aggregate.md"]
+    },
+    {
+      "requirement": "The three criteria, both approaches (EDPB 02/2026)",
+      "control": "Scoreboard: 3/3, 1 named residual",
+      "evidence_tag": "MEASURED",
+      "evidence": ["outputs/risk_eval.json", "app/lib/verdicts.py"]
+    },
+    {
+      "requirement": "Every individual, not the average (EDPB para 36)",
+      "control": "k counted on distinct subscribers, worst-off reported, contribution cap not enforced",
+      "evidence_tag": "MEASURED",
+      "evidence": ["outputs/release_stats_aggregate.json"]
+    },
+    {
+      "requirement": "Anonymisation is itself processing (EDPB para 38)",
+      "control": "Raw data only in a secure folder; the app never reads it; the LLM never saw a row; every LLM call audited",
+      "evidence_tag": "DOCUMENTED",
+      "evidence": ["outputs/llm_calls.jsonl", "src/safety.py"]
+    },
+    {
+      "requirement": "Honest labelling (EDPB para 40)",
+      "control": "Never 'fully anonymous'; residual risks named",
+      "evidence_tag": "DOCUMENTED",
+      "evidence": ["docs/risk_assessment.md"]
+    },
+    {
+      "requirement": "Documentation retained (EDPB para 41)",
+      "control": "Row-level transformation docs, decision log",
+      "evidence_tag": "DOCUMENTED",
+      "evidence": ["docs/transformations.md", "outputs/release_decisions.jsonl"]
+    },
+    {
+      "requirement": "Humans decide (responsible AI)",
+      "control": "Mistral proposes field classes, a human approves with logged overrides; release approval in the Trade-off Explorer",
+      "evidence_tag": "DOCUMENTED",
+      "evidence": ["outputs/classification.json"]
+    },
+    {
+      "requirement": "Re-assess over time (EDPB para 35)",
+      "control": "Reproducible pipeline + tests; re-run as data and techniques change",
+      "evidence_tag": "DOCUMENTED",
+      "evidence": ["tests/"]
+    }
+  ]
 }

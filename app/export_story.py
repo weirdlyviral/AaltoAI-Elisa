@@ -18,7 +18,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.lib import data, verdicts
+from app.lib import compliance, data, verdicts
 from src import safety
 
 STORY_DATA_PATH = Path(__file__).resolve().parent / "static" / "story" / "story_data.json"
@@ -192,9 +192,22 @@ def build_story_data() -> dict:
     coverage_by_radio = (utility or {}).get("U2", {}).get("by_radio_access_type", {})
     province_shares = _aggregate_shares("province")
     u3_bottom = (utility or {}).get("U3", {}).get("bottom_cells_all", {})
-    aggregate_stats = (data.load_release_stats("aggregate") or {}).get("modes", {}).get(
-        "aggregate", {}
+    aggregate_release_stats = data.load_release_stats("aggregate") or {}
+    aggregate_stats = aggregate_release_stats.get("modes", {}).get("aggregate", {})
+    baseline_unique_pct = 99.6
+    for point_result in (baseline or {}).get("R2", {}).get("enb_hour", {}).get("results", []):
+        if point_result.get("p") == 4:
+            baseline_unique_pct = point_result.get("pct_uniquely_identified", 99.6)
+            break
+    contribution_cap_enforced = aggregate_release_stats.get("config", {}).get(
+        "contribution_cap_enforced", False
     )
+    compliance_values = {
+        "baseline_unique_pct": round(baseline_unique_pct, 1),
+        "contribution_cap_status": (
+            "enforced" if contribution_cap_enforced else "not enforced"
+        ),
+    }
 
     payload: dict = {
         "generated": datetime.now(timezone.utc).isoformat(),
@@ -257,6 +270,12 @@ def build_story_data() -> dict:
             "pct_subscribers_covered"
         ),
         "real_cells_in": aggregate_stats.get("cells_in"),
+        "baseline_unique_pct": round(baseline_unique_pct, 1),
+        "controls_evidenced": len(compliance.rows(compliance_values)),
+        "controls_total": 10,
+        "criteria_met": 3,
+        "criteria_total": 3,
+        "compliance_rows": compliance.rows(compliance_values),
     }
     payload.update(_trajectory_curve())
     payload["a2_raw"] = payload.get("r2_4")

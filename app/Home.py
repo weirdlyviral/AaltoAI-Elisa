@@ -110,15 +110,9 @@ TOOLS = [
         "Ask questions of the published aggregates in plain language; the assistant may only "
         "query cells covering ten or more subscribers.",
     ),
-    (
-        "AI Red Team",
-        "AI_Red_Team",
-        "Let a model propose its own re-identification strategy, then score that strategy "
-        "against the release without ever showing it a real target.",
-    ),
 ]
 
-tool_cols = st.columns(3, gap="medium")
+tool_cols = st.columns(len(TOOLS), gap="medium")
 for col, (name, slug, description) in zip(tool_cols, TOOLS):
     with col:
         # Spans, not divs: a block element inside an inline <a> makes the HTML

@@ -189,8 +189,7 @@ Quirks that shape everything:
 - **M6 integration (branch `m6-integrate`): robi's Trade-off Explorer and AI
   Analyst merged in.** Taken from `origin/robi`: `app/pages/1_Trade-off_Explorer.py`
   (altair scatter over the 48-config grid, click-to-select), `2_AI_Analyst.py`
-  (chat UI), `3_AI_Red_Team.py` (UI only - `run_agent("red_team")` still returns a
-  placeholder), `app/lib/agent.py` (`run_agent` analyst loop via `safety.llm_gateway`,
+  (chat UI), `app/lib/agent.py` (`run_agent` analyst loop via `safety.llm_gateway`,
   max 6 steps; `query_aggregate` unchanged), `outputs/tradeoff_grid.json`,
   `generate_tradeoff*.py`, `docs/privacy_thresholds.md`.
   NOT taken: robi's `src/`, `outputs/risk_eval.json`, `outputs/utility_eval.json`,
@@ -202,6 +201,8 @@ Quirks that shape everything:
   **Open: two rule systems for "releasable"** - `docs/privacy_thresholds.md`
   (fixed ceilings, drives the explorer) vs `app/lib/verdicts.py` (relative to 1/k
   and the DP bound, drives the scoreboard). Cross-referenced, not reconciled.
+- **M6 red team dropped for time:** the GDPR RULES and COMPLY story layer is the
+  review focus; no red-team page or release artefacts are carried on this branch.
 - **M7 Pitch & submit.**
 
 Update this Status section whenever a milestone changes state.

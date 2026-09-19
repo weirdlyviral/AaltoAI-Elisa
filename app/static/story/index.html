@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Anonymity Assessment Studio — Story</title>
+    <link rel="stylesheet" href="../tokens.css" />
     <link rel="stylesheet" href="story.css" />
   </head>
   <body>
@@ -23,6 +24,7 @@
         <div class="graphic-panel">
           <svg id="story-svg" role="img"
                aria-label="Illustrative animated diagram of the anonymisation pipeline"></svg>
+          <div class="chapter-overlay" id="chapter-overlay" hidden></div>
           <div class="panel-tag" id="panel-tag"></div>
           <div class="title-card" id="title-card">
             <h1>How do you share network data without sharing people?</h1>
@@ -38,6 +40,8 @@
     </main>
 
     <div class="dot-tooltip" id="dot-tooltip"></div>
+
+    <footer class="story-footer">Hackathon prototype — not an Elisa product</footer>
 
     <script src="../vendor/d3.v7.min.js"></script>
     <script src="../vendor/scrollama.min.js"></script>

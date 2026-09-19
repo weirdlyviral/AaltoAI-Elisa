@@ -1,31 +1,13 @@
 @import url("../vendor/fonts/fonts.css");
 
-/* Single dark theme, shared with the Streamlit app (app/assets/styles.css). */
+/* Single light theme, shared with the Streamlit app (app/assets/styles.css).
+   Every colour comes from tokens.css. */
 :root {
-  --bg: #0b1220;
-  --panel: #121b2c;
-  --panel-2: #172335;
-  --fg: #e8eefb;
-  --fg-dim: #ccd8ea;
-  --muted: #9cadc6;
-  --border: rgba(232, 238, 251, 0.14);
-  --border-soft: rgba(232, 238, 251, 0.12);
-
-  /* fill = network type (Okabe-Ito derived, colour-blind safe) */
-  --net-4g: #56b4e9;
-  --net-5g: #e69f00;
-  --net-2g: #cc79a7;
-
-  /* ring = privacy status */
-  --ring-dashed: #8fa0ba;
-  --ring-risk: #ff6b6b;
-  --ring-safe: #3ddc97;
-
-  --accent: #6ea8fe;
-
+  /* Colours live in ../tokens.css. Only layout and type variables here. */
   /* Set from story.js: one viewBox unit expressed in rendered pixels, so the
      px numbers on SVG labels below are what a projector actually shows. */
   --u: 1px;
+  --footer-h: 1.9rem;
   --chrome-scale: 1;
 
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -58,7 +40,7 @@ body {
   font-size: 0.74rem;
   letter-spacing: 0.01em;
   padding: 0.45rem 5rem;
-  background: rgba(11, 18, 32, 0.94);
+  background: var(--scrim);
   color: var(--muted);
   border-bottom: 1px solid var(--border-soft);
   backdrop-filter: blur(6px);
@@ -79,6 +61,25 @@ body {
   color: var(--fg);
 }
 
+/* ---------- footer ---------- */
+
+.story-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  height: var(--footer-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--scrim);
+  border-top: 1px solid var(--border-soft);
+}
+
 /* ---------- layout: text 40% left, graphic 60% right ---------- */
 
 .story-layout {
@@ -97,7 +98,7 @@ body {
   width: 60%;
   position: sticky;
   top: 2.1rem;
-  height: calc(100vh - 2.1rem);
+  height: calc(100vh - 2.1rem - var(--footer-h));
   display: flex;
   flex-direction: column;
   padding: 0.9rem 1.6rem 1.2rem 0.4rem;
@@ -132,7 +133,7 @@ body {
 }
 
 .pipeline-stage.is-current {
-  color: #06121f;
+  color: var(--on-accent);
   background: var(--accent);
   border-color: var(--accent);
   font-weight: 600;
@@ -159,6 +160,174 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.chapter-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 3.2rem 2.2rem 2rem;
+  overflow: auto;
+  background: var(--panel);
+}
+
+.law-cards {
+  display: grid;
+  gap: 0.8rem;
+  align-content: center;
+  min-height: 100%;
+}
+
+.law-card,
+.criteria-tile {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  animation: chapter-card-in 0.65s ease both;
+}
+
+.law-card:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.law-card:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.law-card strong,
+.criteria-tile strong {
+  display: block;
+  color: var(--fg);
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.law-card p {
+  margin: 0.42rem 0 0;
+  color: var(--fg-dim);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.criteria-quote {
+  max-width: 42ch;
+  margin: 0 auto 1.2rem;
+  color: var(--fg-dim);
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.criteria-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.criteria-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 10rem;
+  animation-delay: var(--tile-delay);
+}
+
+.criteria-tile span {
+  margin-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.compliance-table {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.compliance-head,
+.compliance-row,
+.compliance-call {
+  display: grid;
+  grid-template-columns: 1.05fr 1.3fr 0.9fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.compliance-head {
+  padding: 0 0.6rem 0.45rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.compliance-row,
+.compliance-call {
+  border-top: 1px solid var(--border-soft);
+  padding: 0.48rem 0.6rem;
+  color: var(--fg-dim);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  animation: chapter-card-in 0.5s ease var(--row-delay) both;
+}
+
+.compliance-row > span:first-child,
+.compliance-call > span:first-child {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.check-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: var(--ring-safe);
+  color: #06121f;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.evidence-tag {
+  color: var(--ring-safe);
+  font-size: 0.61rem;
+  letter-spacing: 0.04em;
+}
+
+.evidence-tag.measured {
+  color: var(--net-5g);
+}
+
+.compliance-call {
+  margin-top: 0.45rem;
+  border: 1px solid rgba(230, 159, 0, 0.5);
+  border-left: 3px solid var(--net-5g);
+  color: var(--fg-dim);
+}
+
+.compliance-call > span:last-child {
+  color: var(--net-5g);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+@keyframes chapter-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ---------- legend ---------- */
@@ -216,7 +385,11 @@ body {
   justify-content: center;
   text-align: center;
   padding: 2.5rem;
-  background: linear-gradient(180deg, rgba(11, 18, 32, 0.93), rgba(11, 18, 32, 0.82));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 93%, transparent),
+    color-mix(in srgb, var(--bg) 82%, transparent)
+  );
   transition: opacity 0.7s ease, visibility 0.7s ease;
 }
 
@@ -283,7 +456,7 @@ body {
 }
 
 .trail-badge text {
-  fill: #0b1220;
+  fill: var(--on-accent);
   font-size: calc(var(--u) * 13);
   font-weight: 700;
   font-family: var(--sans);
@@ -292,8 +465,8 @@ body {
 }
 
 .hull-shape {
-  fill: rgba(110, 168, 254, 0.07);
-  stroke: rgba(110, 168, 254, 0.28);
+  fill: color-mix(in srgb, var(--accent) 7%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 28%, transparent);
   stroke-width: 1;
 }
 
@@ -377,7 +550,7 @@ body {
 
 .attack-verdict,
 .score-chip-text {
-  fill: #06121f;
+  fill: var(--on-tint);
   font-size: calc(var(--u) * 13);
   font-weight: 700;
   font-family: var(--sans);
@@ -387,17 +560,17 @@ body {
 
 .attack-verdict-chip.is-pass,
 .score-chip.is-pass {
-  fill: var(--ring-safe);
+  fill: var(--pass-fill);
 }
 
 .attack-verdict-chip.is-residual,
 .score-chip.is-residual {
-  fill: var(--net-5g);
+  fill: var(--residual-fill);
 }
 
 .attack-verdict-chip.is-fail,
 .score-chip.is-fail {
-  fill: var(--ring-risk);
+  fill: var(--fail-fill);
 }
 
 .score-header {
@@ -449,19 +622,19 @@ body {
 }
 
 .utility-target line {
-  stroke: var(--net-5g);
+  stroke: var(--residual);
   stroke-width: 1.4;
   stroke-dasharray: 4 3;
 }
 
 .utility-target text {
-  fill: var(--net-5g);
+  fill: var(--residual);
   font-size: calc(var(--u) * 13);
   font-family: var(--sans);
 }
 
 .annotation-plate {
-  fill: rgba(11, 18, 32, 0.88);
+  fill: color-mix(in srgb, var(--bg) 88%, transparent);
   stroke: var(--border-soft);
   stroke-width: 1;
 }
@@ -495,7 +668,7 @@ body {
   position: fixed;
   z-index: 70;
   pointer-events: none;
-  background: rgba(8, 14, 25, 0.96);
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.4rem 0.55rem;
@@ -612,12 +785,22 @@ body {
   padding-left: 0.7rem;
 }
 
+.law-lens-label {
+  display: inline-block;
+  margin-right: 0.45rem;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .step-chip {
   display: inline-block;
   margin-top: 1rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.7rem;
-  color: var(--muted);
+  color: var(--fg-dim);
   background: var(--panel-2);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
@@ -639,7 +822,7 @@ body {
   padding: 0.6rem 1.1rem;
   border-radius: 9px;
   border: 1px solid var(--accent);
-  color: #06121f;
+  color: var(--on-accent);
   background: var(--accent);
 }
 
@@ -832,15 +1015,15 @@ body {
 }
 
 .panel-tag.is-illustrative {
-  color: var(--net-5g);
-  background: rgba(230, 159, 0, 0.14);
-  border: 1px solid rgba(230, 159, 0, 0.45);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--residual-fill) 40%, var(--bg));
+  border: 1px solid var(--residual);
 }
 
 .panel-tag.is-measured {
-  color: var(--ring-safe);
-  background: rgba(61, 220, 151, 0.12);
-  border: 1px solid rgba(61, 220, 151, 0.45);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--pass-fill) 40%, var(--bg));
+  border: 1px solid var(--ring-safe);
 }
 
 .tag {
@@ -856,15 +1039,15 @@ body {
 }
 
 .tag.is-measured {
-  color: var(--ring-safe);
-  background: rgba(61, 220, 151, 0.12);
-  border: 1px solid rgba(61, 220, 151, 0.4);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--pass-fill) 40%, var(--bg));
+  border: 1px solid var(--ring-safe);
 }
 
 .tag.is-illustrative {
-  color: var(--net-5g);
-  background: rgba(230, 159, 0, 0.12);
-  border: 1px solid rgba(230, 159, 0, 0.4);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--residual-fill) 40%, var(--bg));
+  border: 1px solid var(--residual);
 }
 
 /* ---------- presenter mode ---------- */
@@ -879,14 +1062,14 @@ body {
 
 .pitch-hint {
   position: fixed;
-  bottom: 0.6rem;
+  bottom: calc(var(--footer-h) + 0.4rem);
   left: 0.9rem;
   z-index: 60;
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  background: rgba(11, 18, 32, 0.85);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   padding: 0.25rem 0.5rem;
@@ -941,8 +1124,8 @@ body {
 }
 
 .counterfactual-box {
-  fill: rgba(255, 107, 107, 0.07);
-  stroke: rgba(255, 107, 107, 0.35);
+  fill: color-mix(in srgb, var(--ring-risk) 7%, transparent);
+  stroke: color-mix(in srgb, var(--ring-risk) 35%, transparent);
   stroke-width: 1;
 }
 
