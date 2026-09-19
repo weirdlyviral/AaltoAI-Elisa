@@ -10,4 +10,9 @@ numeric_winsorise: [0.01, 0.99]
 numeric_round_sig_figs: 3
 volume_top_code_quantile: 0.99
 aggregate_min_subscribers_per_cell: 10
-dp_epsilon: 1.0              # Laplace noise (seed 42) on n_subscribers and n_rows
+dp_epsilon: 1.0              # Laplace noise (seed 42) on n_subscribers
+# Contribution bound: the most aggregate cells one subscriber may influence.
+# Noise scale is max_cells_per_subscriber / dp_epsilon. Persisted here (not just
+# computed at runtime) so every module reads the same value - src/evaluate.py
+# silently assumed 1 and understated the scale 11-fold until this was added.
+max_cells_per_subscriber: 11

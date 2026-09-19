@@ -4,8 +4,8 @@ A study guide for presenting and defending this solution. Written for an
 engineer who is not a privacy specialist. Every number here comes from a file in
 this repo; the source is named so you can check it under questioning.
 
-**Status of M3.** The risk-evaluation milestone is not merged. Anywhere its
-results belong, this guide says `[PENDING M3]` rather than guessing.
+**Status.** All milestones through M4 are complete and merged. Every attack in
+section 6 was executed, not asserted.
 
 ---
 
@@ -72,7 +72,7 @@ flowchart TD
     ANON --> REC[["<b>record</b> release<br/>k = 10, comparison"]]
     ANON --> SES[["<b>session</b> release<br/>optional, HMAC"]]
 
-    AGG --> EVAL["<b>evaluate attacks</b><br/>M3 - PENDING"]
+    AGG --> EVAL["<b>evaluate attacks</b><br/>src/evaluate.py<br/>A1-A6, measured"]
     REC --> EVAL
     AGG --> UTIL["<b>utility</b><br/>src/utility.py<br/>what survived?"]
     REC --> UTIL
@@ -100,7 +100,8 @@ a bad file never exists at its destination.
 | `profile.py` | 264 | Reads raw, writes `outputs/profile.json`. Aggregates per column; identifier columns get shape only (lengths, digit share), never values. |
 | `baseline_risk.py` | 283 | Reads raw, writes `outputs/baseline_risk.json`. Measures how identifiable the data is *before* anonymisation (R1 row uniqueness, R2 trajectories, R3 outliers). |
 | `classify.py` | 382 | Reads `profile.json` + `docs/dataset_description.txt` only. Asks Mistral to classify all 23 fields, walks a human through each, writes `outputs/classification.json` and `config/fields.yaml`. |
-| `anonymise.py` | 1,095 | Reads raw + both configs. Applies the transforms and writes the three releases, `transform_log.json`, `release_stats.json`, `sweep.json`, `docs/transformations.md`. |
+| `anonymise.py` | 1,113 | Reads raw + both configs. Applies the transforms and writes the three releases, `transform_log.json`, `release_stats.json`, `sweep.json`, `docs/transformations.md`. |
+| `evaluate.py` | 914 | Reads raw, rebuilds releases in memory, runs attacks A1-A6, writes `outputs/risk_eval.json` and `docs/risk_assessment.md`. |
 | `utility.py` | 752 | Reads the releases + raw. Scores what survived; writes `outputs/utility_eval.json` and `docs/utility.md`. Does not modify the anonymiser. |
 
 ### `config/`
@@ -108,7 +109,8 @@ a bad file never exists at its destination.
 | File | What it holds |
 | --- | --- |
 | `fields.yaml` | Per field: the reviewed privacy `class` and the `treatment` actually applied. 23 entries. |
-| `release.yaml` | The release parameters: `k: 10`, `time_bucket_minutes: 15`, `area_mode: enb_tokenised`, `dp_epsilon: 1.0`, thresholds and rounding. |
+| `release.yaml` | The release parameters: `k: 10`, `time_bucket_minutes: 15`, `area_mode: enb_tokenised`, `dp_epsilon: 1.0`, `max_cells_per_subscriber: 11` (the contribution bound), thresholds and rounding. |
+| `evaluate.yaml` | Attack sample sizes and tolerances: 1,000 trajectory samples, 200 membership targets, 100 trials each. |
 
 ### `outputs/`
 
@@ -117,8 +119,9 @@ a bad file never exists at its destination.
 | `profile.json` | `profile.py` | Column and structure aggregates. |
 | `baseline_risk.json` | `baseline_risk.py` | The "before" risk numbers. |
 | `classification.json` | `classify.py` | Proposed vs final class per field, reviewer, timestamps. |
-| `transform_log.json` | `anonymise.py` | Every transform with its parameters and rows affected. |
-| `release_stats.json` | `anonymise.py` | Per-mode suppression, escalation, group sizes, DP settings. |
+| `transform_log_{mode}.json` | `anonymise.py` | Every transform with its parameters and rows affected, per mode. |
+| `release_stats_{mode}.json` | `anonymise.py` | Suppression, escalation, group sizes and DP settings, per mode. |
+| `risk_eval.json` | `evaluate.py` | The measured result of attacks A1-A6. |
 | `sweep.json` | `anonymise.py` | 24 record-mode parameter combinations + 4 epsilon settings. |
 | `utility_eval.json` | `utility.py` | U1–U5 scores. |
 | `llm_calls.jsonl` | `safety.py` | Audit log of every LLM call. Git-ignored. |
@@ -127,14 +130,17 @@ a bad file never exists at its destination.
 ### `docs/`
 
 `dataset_description.txt` (one line per column, the LLM's only semantic input),
-`transformations.md` and `utility.md` (both generated, never hand-edited),
-`specs/m2.md` and `specs/m4.md`, and this guide.
+`transformations_{mode}.md`, `utility.md` and `risk_assessment.md` (all
+generated, never hand-edited), `specs/m2.md`, `specs/m3.md`, `specs/m4.md`, and
+this guide.
 
-### `tests/` — 80 tests
+### `tests/` — 92 tests
 
-`test_safety.py` (29), `test_anonymise.py` (32), `test_utility.py` (19). All
-build their own synthetic data with fabricated identifiers; none touches the
-real extract.
+`test_safety.py` (29), `test_anonymise.py` (32), `test_utility.py` (19),
+`test_evaluate.py` (12). All build their own synthetic data with fabricated
+identifiers; none touches the real extract. One test parses `evaluate.py` with
+`ast` and fails any attack function that returns a constant instead of measuring
+something — see section 8 for why that exists.
 
 ### Run it end to end
 
@@ -146,12 +152,13 @@ cp .env.example .env          # then fill SECURE_DIR and the three LLM values
 .venv/bin/python -m src.profile              # -> outputs/profile.json
 .venv/bin/python -m src.baseline_risk        # -> outputs/baseline_risk.json
 .venv/bin/python -m src.classify             # interactive field review
-.venv/bin/python -m src.anonymise --mode all # aggregate + record releases
+.venv/bin/python -m src.anonymise --mode all # aggregate + record (session is opt-in)
 .venv/bin/python -m src.anonymise --mode session   # optional, explicit
 .venv/bin/python -m src.anonymise --sweep    # -> outputs/sweep.json
+.venv/bin/python -m src.evaluate             # -> outputs/risk_eval.json (attacks)
 .venv/bin/python -m src.utility              # -> outputs/utility_eval.json
 
-.venv/bin/python -m pytest tests/            # 80 tests
+.venv/bin/python -m pytest tests/            # 92 tests
 .venv/bin/python -m src.safety guard --dir outputs   # must exit 0
 .venv/bin/python -m src.safety wipe-tmp
 ```
@@ -249,11 +256,18 @@ cell of 6 is suppressed for being too small. If you know the slice holds 83
 people, 83 − 40 − 25 − 12 = 6. You've recovered it. So we also suppress the
 smallest survivor (12), leaving two unknowns and one equation.
 
-**Here:** `anonymise.aggregate_cells`. Primary suppression removed **1,033**
-cells below 10 subscribers; secondary removed **78** more. Total 1,111 of 3,753
-cells = **29.6%**. We also publish **one granularity only** — no marginals or
-totals file — which is what makes the subtraction attack need outside knowledge
-in the first place.
+**Here:** `anonymise.aggregate_cells`. Primary suppression removed **901** cells
+whose *noisy* count fell below 10; secondary removed **80** more. Total 981 of
+3,753 cells = **26.1%**. We also publish **one granularity only** — no marginals
+or totals file — which is what makes the subtraction attack need outside
+knowledge in the first place.
+
+**Measured (A5):** with no noise and no secondary suppression, **0%** of
+suppressed cells were recovered — because no slice in this extract ever loses
+exactly one cell, so the subtraction always yields the sum of several unknowns.
+Secondary suppression costs 80 cells and is **untested on this data**; the
+synthetic test in `tests/test_evaluate.py` proves the mechanism works when a
+lone cell *is* suppressed. Say that plainly rather than claiming a win.
 
 **Why:** Generalise first, suppress last: suppression costs data, so it is the
 fallback. The record release escalates area → province *before* dropping
@@ -280,21 +294,27 @@ shifts measured in `outputs/utility_eval.json`:
 
 | Metric | Mean change | Note |
 | --- | --- | --- |
-| `im_video_GB_sum` | **−100%** | 99.7% of values are zero, so p99 is 0 — the cap flattens the column to all zeros |
-| `im_audio_GB_sum` | −98.6% | 98.9% zeros |
-| `http_response_time_avg` | −98.0% | 94.4% zeros |
-| `tethering_data_GB_dl_sum` | −88.8% | 84.2% zeros |
-| `data_GB_sum` | −53.8% | heavily skewed |
-| `tp_dl_avg` | −26.0% | heavily skewed |
+| `http_response_time_avg` | **−98.0%** | QoE metric, 94.4% zeros — winsorising, not top-coding |
+| `data_GB_sum` | −53.8% | dense but heavily skewed, so the cap still removes most mass |
+| `tethering_data_GB_dl_sum` | −35.7% | was −88.8% before the fix |
+| `im_audio_GB_sum` | −35.6% | was −98.6% |
+| `tp_dl_avg` | −26.0% | QoE metric |
+| `im_video_GB_sum` | −14.9% | **was −100%** — the column is no longer destroyed |
 
 **Say this out loud in the pitch:** *medians survive, means do not.* The release
 supports "what is typical" questions and must not be used for totals or averages
-on those six metrics. On a column that is mostly zeros, a p99 cap sits at zero
-and destroys it.
+on the five metrics still flagged. On a column that is mostly zeros, a p99 cap
+taken over *all* values sits at zero and destroys it — which is the bug M3 fixed
+for volumes and has yet to fix for QoE metrics.
 
-**Fix status:** identified by M4, **not yet fixed** — `src/anonymise.py` belongs
-to M3 in parallel. The known fix is to take the quantile over non-zero values
-only, which earlier code did. `[PENDING M3]`
+**Fix status: partially fixed.** M3 changed volume top-coding to take the p99
+over **non-zero values only**. That rescued the sparse volume columns —
+`im_video_GB_sum` went from −100% to −14.9%, and the severely-degraded count
+dropped from 6 metrics to 5. It did **not** help two cases: QoE metrics, which
+are winsorised by a separate code path that still uses the all-values quantile
+(`http_response_time_avg` is still −98%), and dense-but-skewed columns like
+`data_GB_sum`, where the non-zero p99 is essentially the same number. Applying
+the same non-zero rule to `winsorise_qoe` is the remaining fix.
 
 ### Trajectory uniqueness — the "4 points" result
 
@@ -322,9 +342,18 @@ visits in the hour"* — that's 159,209 of 199,195 people.
 headline release has no subscriber key, and why location is generalised to
 province there.
 
+**After anonymisation (measured, A2):** this is the most important honest point
+in the whole deck. The record release carries **no subscriber key**, so the
+attack cannot be run — rows can't be grouped into a trajectory. But if you grant
+an attacker the ability to link rows anyway, 4 known points still single out
+**99.3%** of targets at area granularity. **The protection is structural, not
+statistical.** At province granularity — what the defined recipient actually
+sees — the same attack singles out **3.8%**, with a median of 76 candidate
+subscribers remaining.
+
 **Weakness:** measured on one hour of fabricated data. With (province, date)
-instead of (cell, hour), uniqueness is **0% at every level** — but only because
-the extract is a single date, not because provinces are safe.
+instead of (cell, hour), raw uniqueness is **0% at every level** — but only
+because the extract is a single date, not because provinces are safe.
 
 ### l-diversity and homogeneity
 
@@ -337,14 +366,23 @@ can't tell which one is Anna, but if you know Anna is in that group, you've
 learned she used tethering. l-diversity requires at least *l* distinct sensitive
 values per group.
 
-**Here:** Planned in M3 — the share of record-mode QI groups where every member
-shares the same tethering flag or the same `application_category`.
-**`[PENDING M3]`**
+**Here (measured, A3):** `evaluate.run_a3` tests three sensitive flags across all
+27,291 record-release QI groups. The result is good news with a caveat:
 
-**Why:** It's the standard, well-known gap in a k-anonymity-only story, and a
-judge may well ask. Knowing we measure it is better than claiming it can't
-happen. Context: **58.25% of subscribers have some tethering** in raw, so
-all-or-nothing groups are plausible.
+| Attribute | Groups homogeneous | Homogeneous on the *revealing* value | l (min / median) |
+| --- | --- | --- | --- |
+| tethering | 10.97% | **0%** | 1 / 2 |
+| heavy user | 69.06% | **0%** | 1 / 1 |
+| video | 94.17% | **0%** | 1 / 1 |
+
+**No group is uniformly `True` on any sensitive attribute**, so k-anonymity is
+not disclosing a positive trait. Homogeneous groups are common but they are
+homogeneous on `False` — which only tells an attacker that the target *didn't*
+do something, a far weaker disclosure.
+
+`application_category` is deliberately excluded: it is itself a
+quasi-identifier, so every group holds exactly one value and testing homogeneity
+on it would return 100% by construction, not a finding.
 
 **Weakness:** l-diversity has its own gaps (it ignores how skewed the attribute
 is overall), which is part of why the headline release is aggregate + DP rather
@@ -371,33 +409,46 @@ an attacker knows.
 noise scale is 1, so we publish about 50 ± 1. A user can't tell from 50 vs 51
 whether they're in it. At ε=0.5 the scale doubles and noise roughly doubles.
 
-**Here:** `anonymise.apply_dp_noise`. **Laplace, ε = 1.0, scale 1.0, seed 42**,
-applied to `n_subscribers` and `n_rows`. Measured cost (`utility_eval.json` U4):
-median relative error **0.28%**, p90 **5.3%**.
+**Here:** `anonymise.apply_dp_noise`. **Laplace, ε = 1.0, seed 42**, applied to
+`n_subscribers` only. The scale is **11.0**, because the contribution bound is
+11: a subscriber can influence up to 11 aggregate cells (the p99), so
+`scale = max_cells_per_subscriber / ε`. Measured cost (`utility_eval.json` U4):
+median relative error **7.3%**, p90 **116%**.
 
-| ε | Noise scale | Median error | Mean error |
-| --- | --- | --- | --- |
-| 0.5 | 2.0 | 0.99% | 3.57% |
-| **1.0** | **1.0** | **0.28%** | **1.77%** |
-| 2.0 | 0.5 | 0.00% | 0.76% |
-| none | — | 0 | 0 |
+| ε | Noise scale | Median error | Mean error | Cells published |
+| --- | --- | --- | --- | --- |
+| 0.5 | 22.0 | 14.6% | 228% | 2,762 |
+| **1.0** | **11.0** | **7.3%** | **100%** | **2,772** |
+| 2.0 | 5.5 | 3.6% | 40% | 2,749 |
+| none | — | 0 | 0 | 2,642 |
 
-**What our DP does NOT cover — know these cold:**
+Those mean errors are large because cells are small: with a minimum of 10
+subscribers and noise of scale 11, a small cell's count can easily double or
+vanish. The **median** cell (88 subscribers) is off by 7.3%.
 
-1. **`n_rows` sensitivity is wrong.** One subscriber contributes up to 19 rows,
-   so their true sensitivity is up to 19, not 1. We noise `n_rows` at scale 1
-   anyway. **The ε=1.0 claim is therefore sound for `n_subscribers` and not a
-   strict user-level guarantee for `n_rows`.** We did no contribution bounding.
-2. **Suppression is decided on true counts**, not noisy ones. Which cells appear
-   at all leaks information that ε does not cover. Proper noisy-threshold
-   suppression would fix this.
-3. **The QoE statistics are not noised at all** — only the two counts are. The
-   medians, p10s and p90s are exact (post-generalisation).
-4. **No budget composition.** We publish once. Repeated releases would consume
-   more budget and we don't track that.
+**What our DP covers — and what it does not:**
 
-Both (1) and (2) are recorded in `release_stats.json` under `dp.caveats` — we
-wrote them down rather than hoping nobody asks.
+Covered:
+1. **`n_subscribers`**, noised at scale 11/ε, with the numerator being a real
+   contribution bound rather than an assumption of 1.
+2. **Which cells are published**, because primary suppression is decided on the
+   **noisy** count. This is why the published cell count changes with ε
+   (2,772 at ε=1 versus 2,642 with no noise at all).
+
+Not covered — know these cold:
+3. **The QoE statistics carry no noise.** Medians, p10s and p90s, and the volume
+   sums, are exact post-generalisation. They are protected only by the ≥10
+   subscriber threshold, winsorising and top-coding.
+4. **The record and session releases use no DP at all.**
+5. **No budget composition.** We publish once; repeated releases would consume
+   more budget and we don't track it.
+6. **The contribution bound is a p99, not a maximum.** Roughly 1% of subscribers
+   touch more than 11 cells, and for them the guarantee is correspondingly
+   weaker. The bound is also not *enforced* — no cells are dropped for
+   over-contributing subscribers, which M3's own spec had asked for.
+
+Points 3-5 are recorded in `release_stats_aggregate.json` and
+`docs/risk_assessment.md` — we wrote them down rather than hoping nobody asks.
 
 ### Differencing attacks and membership inference
 
@@ -408,10 +459,27 @@ specific person is in the dataset at all, which can itself be sensitive.
 **Example (differencing):** "Average salary of 10 employees" and "average salary
 of the same team excluding Bob" gives you Bob's salary exactly.
 
-**Here:** Defended by publishing **one granularity only** plus secondary
-suppression (78 extra cells). Membership inference is blunted by the Laplace
-noise: if adding or removing one person barely moves the number, you can't tell.
-Both need empirical testing in M3. **`[PENDING M3]`**
+**Here (measured, A5 and A6):**
+
+*Differencing* — defended by publishing **one granularity only** plus secondary
+suppression (80 extra cells). Result: **0% of suppressed cells recovered**, even
+with no noise and no secondary suppression, because no slice in this extract
+ever loses exactly one cell. Be precise about this: the attack fails here
+because of the shape of the data, not demonstrably because of our defence.
+
+*Membership inference* — the standard DP adversary, who knows every other
+subscriber's data, sees one noisy release and runs a Laplace likelihood-ratio
+test on the target's cells:
+
+| ε | Attacker accuracy | Advantage over guessing | Theoretical ceiling |
+| --- | --- | --- | --- |
+| none | **100%** | +100 pts | 100% |
+| 2.0 | 57.9% | +15.8 pts | 88.1% |
+| **1.0** | **54.0%** | **+8.0 pts** | 73.1% |
+| 0.5 | 52.1% | +4.1 pts | 62.2% |
+
+Without noise the attacker is *always* right. At ε=1 they are barely better than
+a coin flip, and comfortably inside the theoretical ceiling.
 
 **Weakness:** the defence assumes we never publish a second, coarser table. If
 anyone later publishes provincial totals from the same extract, the two together
@@ -421,11 +489,11 @@ reopen the attack.
 
 **Plain:** Three questions a dataset must pass to count as anonymised:
 
-| Test | Question | Our answer |
+| Test | Question | Measured answer |
 | --- | --- | --- |
-| **Singling out** | Can you isolate one individual's record? | Aggregate release has no individual records at all. Record release enforces ≥10 distinct subscribers per group. Empirical test `[PENDING M3]` |
-| **Linkability** | Can you link two records as the same person? | Aggregate: no key exists. Record: no key exists. Session: **yes by design**, within the release only. `[PENDING M3]` |
-| **Inference** | Can you deduce an attribute with high confidence? | The weakest of the three for us — this is the l-diversity/homogeneity gap. `[PENDING M3]` |
+| **Singling out** | Can you isolate one individual's record? | **A1:** 0% of record rows are unique; expected chance of picking the target's row is 0.025 (1 in 40), against 36% of subscribers exposed in raw. **A4:** but add a 0.1 GB volume bucket to the QI and 2.0% of rows fall below k, with 16,850 heavy-user rows among them. **A5:** 0% of suppressed aggregate cells recovered by differencing. |
+| **Linkability** | Can you link two records as the same person? | **A2:** no subscriber key exists in either published release, so the attack cannot be run. If linkage were somehow possible, 4 known points would still single out 99.3% at area granularity and 3.8% at province granularity. Session mode: **linkable by design**, within one release only. |
+| **Inference** | Can you deduce an attribute with high confidence? | **A3:** no QI group is homogeneous on the revealing value of any sensitive attribute. **A6:** membership inference is 54.0% accurate at ε=1, against 100% with no noise. |
 
 **Why:** These three are the standard vocabulary a privacy-literate judge will
 use. Answering in their terms shows you know the framework.
@@ -498,11 +566,11 @@ a machine that makes leaking structurally hard.
 | **`llm_gateway`** | The only network egress. Scans the prompt *and* system message **before the client object is even constructed**, so a leaky prompt can't reach the network layer. |
 | **`SECURE_DIR`** | Raw data lives outside the repo. `load_raw` refuses any path outside it. `.gitignore` covers `.env`, `*.csv`, `*.parquet` and `outputs/releases/`. |
 
-**It works, and we can prove it.** The guard has blocked real writes three times
+**It works, and we can prove it.** The guard has blocked real writes four times
 during development — full-precision float tails in `profile.json` (89 findings),
-an untransformed volume column in a release (172,938 findings), and an all-digit
-hash format. Each was a genuine defect caught by the machine rather than by
-review.
+an untransformed volume column in a release (172,938 findings), an all-digit
+hash format, and an example phone number in an early draft of this very guide.
+Each was a genuine defect caught by the machine rather than by review.
 
 ### What each AI saw
 
@@ -553,14 +621,15 @@ get the final say.
 
 | Figure | Value | Source | Meaning |
 | --- | --- | --- | --- |
-| **Aggregate** cells published | 2,642 of 3,753 | `release_stats.json` | The headline release |
-| Cells suppressed | 1,033 primary + 78 secondary = **29.6%** | `release_stats.json` | The cost of the threshold |
-| Min / median subscribers per cell | 10 / 94 | `release_stats.json` | No thin cells survive |
-| DP setting | Laplace, **ε = 1.0**, scale 1.0, seed 42 | `release_stats.json` | On the two count columns |
-| **Record** rows published | 1,095,807 of 1,099,340 | `release_stats.json` | Comparison release |
-| Rows suppressed / escalated | **0.32%** / 33.61% | `release_stats.json` | Generalise first, drop last |
-| Min / median subscribers per QI group | 10 / 79 | `release_stats.json` | k=10 holds |
-| QI groups | 27,291 | `release_stats.json` | |
+| **Aggregate** cells published | 2,772 of 3,753 | `release_stats_aggregate.json` | The headline release |
+| Cells suppressed | 901 primary + 80 secondary = **26.1%** | `release_stats_aggregate.json` | The cost of the threshold |
+| Min / median subscribers per cell | 10 / 88 | `release_stats_aggregate.json` | No thin cells survive |
+| DP setting | Laplace, **ε = 1.0**, scale **11.0**, seed 42 | `release_stats_aggregate.json` | Scale = contribution bound (11) / ε |
+| Contribution bound | 11 cells per subscriber | `config/release.yaml` | p99 of cells touched per person |
+| **Record** rows published | 1,095,807 of 1,099,340 | `release_stats_record.json` | Comparison release |
+| Rows suppressed / escalated | **0.32%** / 33.61% | `release_stats_record.json` | Generalise first, drop last |
+| Min / median subscribers per QI group | 10 / 79 | `release_stats_record.json` | k=10 holds |
+| QI groups | 27,291 | `release_stats_record.json` | |
 
 ### Parameter sweep
 
@@ -569,30 +638,33 @@ get the final say.
 | Record combinations tested | 24 | `sweep.json` | bucket × area mode × k |
 | Worst suppression across all 24 | **1.22%** | `sweep.json` | Every combination is under 5% |
 | Deployed setting | 0.32% suppressed | `sweep.json` | 15 min, tokenised, k=10 |
-| ε sweep, mean count error | 3.57% / 1.77% / 0.76% at ε 0.5/1/2 | `sweep.json` | The privacy-utility curve |
+| ε sweep, median count error | 14.6% / 7.3% / 3.6% at ε 0.5/1/2 | `sweep.json` | The privacy-utility curve |
+| ε sweep, cells published | 2,762 / 2,772 / 2,749 (2,642 unnoised) | `sweep.json` | Suppression now moves with ε |
 
 ### Utility — M4
 
 | Figure | Value | Source | Meaning |
 | --- | --- | --- | --- |
-| **Headline: median `tp_dl_avg` within 5% of raw** | **99.92% of cells (target ≥90%) — PASS** | `utility_eval.json` | The number to lead with |
-| Other U1 metrics | 96.8%–100% | `utility_eval.json` | All five pass |
-| U2 coverage: rows / subscribers | 99.60% / 99.995% | `utility_eval.json` | Almost everyone is represented |
-| U2 coverage: **2G** | **81.58%** of rows | `utility_eval.json` | vs 99.77% for 4G — uneven |
-| U2 coverage: worst province | 48.19% ("Unavailable") | `utility_eval.json` | Next worst 93.99% |
-| U3 province ranking | Spearman **0.997** | `utility_eval.json` | The ranking survives |
+| **Headline: median `tp_dl_avg` within 5% of raw** | **99.61% of cells (target ≥90%) — PASS** | `utility_eval.json` | The number to lead with |
+| Other U1 metrics | 91.7%–99.8% | `utility_eval.json` | All five pass; `http_response_time_avg` is closest to the line at 91.67% |
+| U2 coverage: rows / subscribers | 99.47% / 99.99% | `utility_eval.json` | Almost everyone is represented |
+| U2 coverage: **2G** | **82.14%** of rows | `utility_eval.json` | vs 99.72% for 4G — uneven |
+| U2 coverage: worst province | 49.40% ("Unavailable") | `utility_eval.json` | Next worst 91.85% |
+| U3 province ranking | Spearman **0.958** | `utility_eval.json` | The ranking survives |
 | U3 worst-10 cells | **10/10 overlap**, Jaccard 1.0 | `utility_eval.json` | The product question is answerable |
-| U4 count error at ε=1 | median 0.28%, p90 5.3% | `utility_eval.json` | DP is cheap here |
-| U5 severely degraded metrics | **6** | `utility_eval.json` | The top-coding problem |
+| U4 count error at ε=1 | median **7.3%**, p90 **116%** | `utility_eval.json` | The real price of contribution bounding |
+| U5 severely degraded metrics | **5** (was 6) | `utility_eval.json` | Top-coding fix rescued `im_video_GB_sum` |
 
-### M3 attacks
+### M3 attacks — all measured
 
-| Figure | Value |
-| --- | --- |
-| Singling out / linkability / inference | `[PENDING M3]` |
-| l-diversity, homogeneous groups | `[PENDING M3]` |
-| Differencing recovery rate | `[PENDING M3]` |
-| Membership inference at ε=1.0 | `[PENDING M3]` |
+| Attack | Raw baseline | After | Source | Meaning |
+| --- | --- | --- | --- | --- |
+| **A1** Row uniqueness | 36.31% of subscribers exposed | **0%** of rows unique; P(identify) = **0.025** | `risk_eval.json` | Singling out by QI is gone |
+| **A2** Trajectory | 99.6% at 4 points | **Not runnable** — no subscriber key. If linkable: 99.3% (area) / 3.8% (province) | `risk_eval.json` | Protection is structural, not statistical |
+| **A3** Homogeneity | n/a | **0%** of groups homogeneous on the revealing value | `risk_eval.json` | No positive trait disclosed |
+| **A4** Outliers | 1.00% above p99 | **2.01%** of rows below k once volume joins the QI; 16,850 heavy rows | `risk_eval.json` | The weakest result — residual risk |
+| **A5** Differencing | n/a | **0%** recovered (also 0% undefended) | `risk_eval.json` | Blocked by data shape, not provably by our defence |
+| **A6** Membership inference | 100% without noise | **54.0%** at ε=1 (ceiling 73.1%, 50% = guessing) | `risk_eval.json` | DP is doing real work |
 
 ---
 
@@ -600,10 +672,12 @@ get the final say.
 
 **Why the aggregate release is the headline.** The baseline says 4 known cell
 visits identify 99.6% of people. Any release keeping per-subscriber rows *and*
-fine location keeps that attack alive. The aggregate release has no subscriber
-key at all, generalises location to province, and adds calibrated noise — it
-removes the attack rather than making it harder. It still answers the product
-question: provinces rank at Spearman 0.997 and the worst-10 cells match 10/10.
+fine location keeps that attack alive. A2 makes this concrete: even in the
+k-anonymised record release, 4 known points would single out 99.3% of targets
+*if* rows could be linked — the only thing stopping it is the absence of a key.
+The aggregate release removes the attack structurally rather than making it
+harder, and it still answers the product question: provinces rank at Spearman
+0.958 and the worst-10 cells match 10/10.
 
 **Why k=10.** The sweep shows the choice is nearly free: across all 24
 combinations the worst suppression is 1.22%, and our setting costs 0.32%. Going
@@ -611,11 +685,12 @@ from k=5 to k=10 roughly doubles suppression but both are far under the 5%
 budget, so we took the stronger setting. k=10 also matches the aggregate cell
 threshold, so both releases tell the same story.
 
-**Why ε=1.0.** ε=1 is a widely used default, and the measured cost is small:
-median count error 0.28%, mean 1.77%. ε=2 would halve the noise but at ε=2 more
-than half the cells get *zero* effective noise after rounding — the guarantee
-becomes largely nominal. ε=0.5 doubles the error to 3.6% mean for a modest gain.
-ε=1 sits where the curve bends.
+**Why ε=1.0.** ε=1 is a widely used default, and A6 shows it does real work:
+attacker accuracy falls from 100% (no noise) to 54.0%, against a 73.1% ceiling.
+The cost is no longer trivial — contribution bounding raised the noise scale to
+11, so the median cell's count is off by 7.3% and the p90 by 116%. ε=2 would
+halve the noise but lets the attacker to 57.9%; ε=0.5 doubles the error for
+another 2 points of protection. ε=1 sits where the curve bends.
 
 **Why record mode is kept only as a comparison.** It's useful for showing what
 k-anonymity alone buys and for analyses needing row-level detail with a tokenised
@@ -632,16 +707,19 @@ resort, not the first tool.
 
 ### With more time
 
-1. **Fix the top-coding collapse** — take the quantile over non-zero values,
-   restoring the six degraded metrics. Known fix, identified, not yet applied.
+1. **Finish the top-coding fix** — M3 applied the non-zero quantile to volumes
+   but not to `winsorise_qoe`, so `http_response_time_avg` is still −98% on the
+   mean. Same one-line rule, second code path.
 2. **Hierarchical fallback for thin cells** — instead of suppressing outright,
    roll a thin cell up a location hierarchy (cell → municipality → province →
-   national) until it reaches k. Would cut the 29.6% cell loss and reduce the
+   national) until it reaches k. Would cut the 26.1% cell loss and reduce the
    2G/rural penalty.
-3. **Contribution bounding + noisy-threshold suppression** — cap rows per
-   subscriber so `n_rows` sensitivity is honest, and decide suppression on noisy
-   counts so the published cell set falls inside ε.
-4. **Finish M3** and put real attack numbers beside the design claims.
+3. **Enforce the contribution bound**, don't just use it as a scale. Today 11 is
+   the p99 and nothing drops the cells of over-contributing subscribers, so ~1%
+   of people get a weaker guarantee than advertised.
+4. **Add volume to the k-anonymity QI set** — A4 is the weakest result: 2.0% of
+   rows fall below k once an attacker knows roughly how much data the target
+   used, and 16,850 heavy-user rows sit in those groups.
 5. **Validate on real, multi-day data** — everything here is one fabricated hour.
 
 ---
@@ -655,21 +733,34 @@ State these before a judge finds them. Each is already recorded in the repo.
    would behave differently.
 2. **`tac` is constant** across all 199,195 subscribers. Device-model risk reads
    as zero because the fabricated data has one device, not because we solved it.
-3. **Suppression is uneven.** 2G keeps 81.58% of rows against 99.77% for 4G. The
-   worst province keeps 48.19%. The people in thin strata — rural areas, old
+3. **Suppression is uneven.** 2G keeps 82.14% of rows against 99.72% for 4G. The
+   worst province keeps 49.40%. The people in thin strata — rural areas, old
    handsets — are the ones the data can say least about. This is the known
    weakness of every threshold method, and it has a fairness dimension worth
    naming.
-4. **DP scope is narrower than "ε=1.0" suggests.** It covers `n_subscribers`
-   properly; `n_rows` is under-noised for its true sensitivity; suppression is
-   decided on true counts; the QoE statistics carry no noise at all.
-5. **Top-coding destroys six metrics' means** — `im_video_GB_sum` entirely.
-   Found by M4, fix known, **not yet applied** (`[PENDING M3]`). Until then the
-   release answers "what is typical", never "how much in total".
+4. **DP scope is narrower than "ε=1.0" suggests.** It covers `n_subscribers` and
+   the choice of published cells. It does **not** cover the QoE medians, p10s,
+   p90s or volume sums — those carry no noise — nor the record and session
+   releases, nor repeated publication. The contribution bound of 11 is a p99 and
+   is not enforced, so roughly 1% of subscribers get a weaker guarantee.
+5. **Top-coding still degrades five metrics' means**, `http_response_time_avg`
+   by 98%. M3 fixed the volume path (rescuing `im_video_GB_sum` from −100% to
+   −14.9%) but not the QoE winsorising path. The release answers "what is
+   typical", never "how much in total".
+10. **Count accuracy is now materially worse.** Honest contribution bounding
+    raised the noise scale from 1 to 11, so the median published count is off by
+    7.3% and the p90 by 116%. Small cells are noisy. This is the price of the
+    ε=1.0 claim being real rather than nominal.
+11. **A5 proves less than it appears.** No slice in this extract ever loses
+    exactly one cell, so differencing recovers 0% even with no defences at all.
+    Secondary suppression costs 80 cells and is untested on this data.
+12. **A4 is the weakest result.** Volume is not part of the k-anonymity QI set,
+    so an attacker who also knows roughly how much data a target used pushes
+    2.0% of rows below k, with 16,850 heavy-user rows among them.
 6. **Cell tokens are reproducible** from raw data + this code (seed 42), so
    tokenisation protects an external recipient, not Elisa.
-7. **Utility is measured on surviving cells only.** "99.92% accurate" describes
-   the 70.4% of cells that were published. Accuracy and coverage must be quoted
+7. **Utility is measured on surviving cells only.** "99.61% accurate" describes
+   the 73.9% of cells that were published. Accuracy and coverage must be quoted
    together.
 8. **ePrivacy purpose limitation is unresolved.** Whether Elisa may reuse this
    data for a given purpose is a separate legal question we have not answered.
@@ -693,24 +784,28 @@ re-identification tests on the output. It also breaks the link to real network
 conditions Elisa needs for service-quality decisions. Our approach keeps real
 measurements and bounds the risk explicitly.
 
-**3. "Utility is 99.9% — did you actually add any noise?"**
-Yes, and it's important to be precise. The 99.9% is about *QoE medians*, which
-are not noised — the noise goes on the two count columns. At ε=1 counts carry
-median error 0.28% and p90 5.3%. Medians look untouched because winsorising only
-clips the outer 1% of each tail, and a median is robust to that. The honest
-version: **the noise is real, on counts; the medians are accurate because
-medians are hard to move.**
+**3. "Utility is 99.6% — did you actually add any noise?"**
+Yes, and it's important to be precise. The 99.6% is about *QoE medians*, which
+carry **no noise at all** — the Laplace noise goes on the subscriber counts. At
+ε=1 those counts carry median error 7.3% and p90 116%. Medians look untouched
+because winsorising only clips the outer 1% of each tail and a median is robust
+to that. The honest version: **the counts are genuinely noisy; the medians are
+accurate because medians are hard to move — and they are not what DP protects.**
 
 **4. "So what did you actually lose?"**
-Three things. 29.6% of cells suppressed entirely. The means of six metrics,
-`im_video_GB_sum` completely. And all individual-level analysis. We measured all
-three rather than discovering them later.
+Four things. 26.1% of cells suppressed entirely. The means of five metrics,
+`http_response_time_avg` by 98%. Count precision — the median cell's subscriber
+count is off by 7.3%. And all individual-level analysis. We measured all four
+rather than discovering them later.
 
 **5. "What if an attacker knows someone's location?"**
 That's exactly our headline risk: on raw data, 4 known cell-visits identify
-99.6% of subscribers. The aggregate release defeats it — no subscriber key means
-nothing to link visits to, and location is generalised to province. On the
-record release this is a live risk and part of why it isn't the recommendation.
+99.6% of subscribers. We measured it after anonymisation too (A2). Neither
+published release has a subscriber key, so the attack cannot be run at all. But
+be honest about *why*: if rows could somehow be linked, 4 points would still
+single out 99.3% of targets at area granularity. The defence is structural —
+the absence of a key — not statistical. At province granularity, what the
+recipient actually sees, it drops to 3.8%.
 
 **6. "Could Elisa itself re-identify this?"**
 Yes. Elisa holds the source extract, and the cell token map is reproducible from
@@ -721,9 +816,10 @@ control, not a mathematical one.
 **7. "Why k=10 and ε=1 specifically?"**
 Both from the sweep, not from intuition. k: all 24 combinations suppress under
 5%, so we took the stronger setting because it was nearly free — 0.32% at k=10.
-ε: at ε=2 more than half the cells get zero effective noise after rounding, so
-the guarantee goes nominal; ε=0.5 doubles the error for modest gain. ε=1 is
-where the curve bends, and it's a common default.
+ε: A6 measures what each buys. No noise, the attacker is 100% accurate; ε=2,
+57.9%; ε=1, 54.0%; ε=0.5, 52.1%. Going below 1 buys about 2 points of
+protection for double the count error. ε=1 is where the curve bends, and it's a
+common default.
 
 **8. "What did the AI actually do?"**
 Mistral Large 3, hosted in Finland, proposed a privacy class for each of the 23
@@ -748,10 +844,12 @@ k-anonymity alone achieves; session mode shows what linkage costs. A single
 release would hide the reasoning.
 
 **11. "What's your biggest weakness?"**
-The top-coding collapse. Six metrics lost their means, one entirely, and we
-found it only because we built a utility evaluation that flagged on mean changes
-rather than just percentiles. The fix is known and not yet applied. Second
-biggest: DP scope is narrower than "ε=1.0" sounds.
+Two, and I'd name both. First, A4: volume is not in the k-anonymity QI set, so
+an attacker who knows roughly how much data a target used pushes 2.0% of rows
+below k, with 16,850 heavy-user rows among them. Second, the top-coding damage —
+five metrics have lost their means, `http_response_time_avg` by 98%. We found
+the second only because our utility check flagged on mean changes rather than
+percentiles; a p95-based check would have reported all-clear.
 
 **12. "How do you know nothing leaked?"**
 An automated guard, not a promise. Every distinct identifier is held in memory
@@ -767,10 +865,12 @@ DP aggregate. k-anonymity is the comparison baseline and the safety net on the
 record release.
 
 **14. "What about l-diversity?"**
-It's the right question and it's our known gap. k-anonymity hides which person
-you are, not what's true of everyone in your group — and 58% of subscribers have
-some tethering, so homogeneous groups are plausible. M3 measures it.
-`[PENDING M3]`
+We measured it (A3). Across all 27,291 QI groups, **no group is homogeneous on
+the revealing value** of tethering, heavy usage or video. Homogeneous groups do
+exist — 94% for video — but they are homogeneous on *False*, which only tells an
+attacker what the target didn't do. We excluded `application_category` from the
+test because it is itself a quasi-identifier, so every group holds one value by
+construction and testing it would return a meaningless 100%.
 
 **15. "Could someone reverse the cell tokens?"**
 Not from the release alone — the map lives in memory and is never written. But
@@ -792,8 +892,26 @@ track budget composition, and that's a gap if this became a recurring feed.
 
 **18. "Is the median really enough for a product team?"**
 For "where is quality worst", yes — and we tested it: province rankings hold at
-Spearman 0.997 and the worst-10 cells match 10/10. For capacity planning, which
+Spearman 0.958 and the worst-10 cells match 10/10. For capacity planning, which
 needs totals, no — and that's exactly what top-coding broke.
+
+**19. "How do you know your attacks are real and not just asserted?"**
+Because we check mechanically. `tests/test_evaluate.py` parses `evaluate.py` and
+fails any attack function that returns a constant instead of computing one. That
+test exists because an earlier draft of M3 hardcoded four of the six results.
+There is also a test asserting that no measured accuracy can exceed the
+differential-privacy bound — it caught a bug where the evaluation used a
+contribution bound of 1 while the release used 11, which had made membership
+inference look 83% accurate against a 73% ceiling.
+
+**20. "Your count error is 116% at p90. Is the data usable?"**
+For counts of small cells, treat them as indicative, not exact — that is the
+honest reading. The median cell (88 subscribers) is off by 7.3%. The large error
+is concentrated where cells are near the 10-subscriber floor and the noise scale
+is 11. The QoE statistics, which is what the service-quality use case actually
+needs, are unaffected: rankings hold at Spearman 0.958 and the worst-10 cells
+match 10/10. If exact counts mattered more than membership privacy, ε=2 halves
+the error.
 
 ---
 
@@ -805,25 +923,29 @@ needs totals, no — and that's exactly what top-coding broke.
 2. **4 known cell visits identify 99.6%** of subscribers in raw data. This is why
    the whole design exists.
 3. **36% of subscribers** own at least one unique row under the strongest QI set.
-4. **Headline: median download throughput within 5% of raw for 99.92% of
+4. **Headline: median download throughput within 5% of raw for 99.61% of
    published cells, target 90% — PASS.**
 5. **k = 10 distinct subscribers** — not rows. One chatty subscriber never
    satisfies k alone.
-6. **ε = 1.0, Laplace, scale 1.0** on counts. Median count error 0.28%.
-7. **29.6% of aggregate cells suppressed** (1,033 primary + 78 secondary); the
+6. **ε = 1.0, Laplace, scale 11** (contribution bound 11 ÷ ε). Membership
+   inference falls from **100% to 54.0%**; median count error 7.3%.
+7. **26.1% of aggregate cells suppressed** (901 primary + 80 secondary); the
    record release loses only 0.32% of rows because it generalises first.
-8. **Coverage is uneven: 2G keeps 81.6% of rows vs 99.8% for 4G.** Name it before
+8. **Coverage is uneven: 2G keeps 82.1% of rows vs 99.7% for 4G.** Name it before
    a judge does.
-9. **Top-coding destroyed six metrics' means**, `im_video_GB_sum` entirely. Found
-   by our own utility check; fix known, not yet applied.
+9. **Trajectory protection is structural, not statistical.** No subscriber key
+   exists — but if rows could be linked, 4 points would still identify 99.3%.
 10. **We never claim "fully anonymous."** Risk is relative to a defined
     recipient; Elisa itself can still re-identify.
 
 **The one-sentence pitch.** *We turned an extract where four known locations
 identify 99.6% of people into an aggregate release with differential privacy
-that still answers "where is service quality worst" to within 5% on 99.9% of
-published cells — and we measured, rather than assumed, everything we lost.*
+where a worst-case attacker's membership guess drops from 100% to 54% — and it
+still answers "where is service quality worst" to within 5% on 99.6% of
+published cells.*
 
-**If you only defend one thing:** the honesty. We report attack rates and ε
-instead of claiming anonymity, we found and published our own worst bug, and a
-leak guard blocked three real mistakes during development.
+**If you only defend one thing:** the honesty. Every attack number is measured,
+and we have a test that fails the build if an attack is faked. We report the
+results that went against us — A4's 16,850 exposed heavy-user rows, A5 proving
+less than it looks, five metrics with broken means — alongside the ones that
+went well. A leak guard blocked four real mistakes during development.

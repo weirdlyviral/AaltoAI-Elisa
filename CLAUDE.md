@@ -117,52 +117,59 @@ Quirks that shape everything:
   61 tests. Artefacts: `outputs/transform_log.json`, `outputs/release_stats.json`,
   `outputs/sweep.json`, `docs/transformations.md`.
   Two honesty caveats to carry into the pitch: the Laplace scale assumes
-  sensitivity 1, which holds for `n_subscribers` but understates `n_rows`
-  (one subscriber contributes many rows), so the stated epsilon is not a strict
-  user-level guarantee for that column; and which cells survive suppression is
-  decided on true counts, so the published cell set is not covered by epsilon.
+  sensitivity 1 - BOTH FIXED IN M3: `n_rows` was dropped from the release
+  entirely, the Laplace scale is now `max_cells_per_subscriber / epsilon`
+  (11/1.0), and primary suppression is decided on the NOISY count so the
+  published cell set is covered by epsilon too.
   Area tokens are seeded (42) for reproducibility.
 - [x] M1 Pipeline skeleton, validation, leak guard (Step 1-6)
 - [x] M2 Anonymisation method: k-anonymity (Steps 1-3)
 - [x] M2 DP counts and mode-suffixed outputs (Step 0)
-- [x] M3 Risk evaluation harness (Step 1)
-- [x] M3 Attacks A1-A6 (Step 2)
-- [x] M3 Automated risk assessment report (Step 3)
-- [ ] M3 Anonymeter (Optional, Step 4) complete. Anonymeter (Step 4) optional/TODO. Before/after table per mode.
-  Added from research:
-  - **l-diversity check:** per QI group in record mode, the share of groups where
-    every member shares the same tethering flag (`tethering_data_GB_dl_sum` > 0)
-    or the same `application_category`. k-anonymity says nothing about a group
-    that is homogeneous on a sensitive attribute.
-  - **Differencing test:** attempt to recover suppressed aggregate cells from the
-    published ones; report the success rate. This is the empirical check on the
-    secondary-suppression defence built in M2.
-  - **Membership-inference-lite:** for sampled subscribers, compare the aggregate
-    computed with and without them and report distinguishability at the chosen
-    epsilon. This is what turns "epsilon = 1.0" into a number a reviewer can read.
-- **M4 Utility metric: DONE (branch `m4-utility`, not merged).** Spec:
+- **M3 Risk evaluation: DONE.** Spec: `docs/specs/m3.md`. `src/evaluate.py` +
+  `config/evaluate.yaml` -> `outputs/risk_eval.json`, `docs/risk_assessment.md`.
+  Step 0 landed in `src/anonymise.py`: contribution bounding (scale =
+  `max_cells_per_subscriber`/epsilon = 11), `n_rows` dropped, noisy-threshold
+  suppression, mode-suffixed outputs, non-zero p99 top-coding for volumes.
+  All six attacks are MEASURED (12 tests, incl. one that parses `evaluate.py`
+  with `ast` and fails any attack returning a constant):
+  - **A1 singling out:** 0% of record rows unique; P(identify) = 0.025, vs 36.31%
+    of subscribers exposed in raw.
+  - **A2 linkability:** not runnable - no subscriber key. If rows *were*
+    linkable, 4 points still single out 99.3% at area granularity, 3.8% at
+    province. The defence is structural, not statistical - say so in the pitch.
+  - **A3 inference:** no QI group is homogeneous on the revealing value of
+    tethering / heavy-user / video. Homogeneous-on-False is common (94% for
+    video) and is a far weaker disclosure. `application_category` is excluded:
+    it is a QI, so homogeneity on it is 100% by construction.
+  - **A4 singling out:** the weakest result. Volume is not in the QI set, so an
+    attacker who also knows the target's rough data volume pushes 2.01% of rows
+    below k, with 16,850 heavy-user rows among them.
+  - **A5 singling out:** 0% of suppressed cells recovered - but also 0%
+    undefended, because no slice in this extract ever loses exactly one cell.
+    Secondary suppression costs 80 cells and is UNTESTED on this data; the
+    synthetic test proves the mechanism, the extract does not.
+  - **A6 inference:** membership inference falls from 100% (no noise) to 54.0%
+    at epsilon 1.0, against a 73.1% theoretical ceiling.
+  Anonymeter (Step 4) remains optional/TODO.
+  Known gaps: the contribution bound of 11 is a p99 and is NOT enforced (no
+  cells are dropped for over-contributing subscribers), and `winsorise_qoe`
+  still takes its quantile over all values, so `http_response_time_avg` is
+  still -98% on the mean.
+- **M4 Utility metric: DONE (branch `m4-utility`, merged with M3).** Spec:
   `docs/specs/m4.md`. `src/utility.py` -> `outputs/utility_eval.json`,
-  `docs/utility.md`. Reads published releases + raw; touches neither
-  `src/anonymise.py` nor `config/release.yaml`. Wasserstein, KS and Spearman are
-  implemented on numpy (scipy is not an allowed dependency).
-  **HEADLINE: median `tp_dl_avg` is within 5% of raw for 99.92% of the 2,642
-  published cells (target >= 90%) -> PASS.** All five U1 metrics are >= 96.8%.
-  Coverage: 99.60% of raw rows, 99.99% of raw subscribers. Province ranking
-  survives (Spearman 0.997 for both `tp_dl_avg` and `http_sr_avg`); the bottom-10
-  worst cells are preserved 10/10 (Jaccard 1.0), 5G-only too.
-  Counts at the deployed epsilon 1.0: median relative error 0.28%, p90 5.3%.
-  **Two findings for M3/M5 to act on:**
-  1. Top-coding at the 0.99 quantile **severely degrades 6 metrics** (mean moves
-     >= 25%): `im_video_GB_sum` -100%, `http_response_time_avg` -98%,
-     `im_audio_GB_sum` -99%, `tethering_data_GB_dl_sum` -89%, `data_GB_sum` -54%,
-     `tp_dl_avg` -26%. On columns that are mostly zeros the p99 cap sits at or
-     near zero and flattens the column outright. Medians survive, so U1 looks
-     healthy while any question about totals or averages does not. The earlier
-     M2 code took p99 over non-zero values only; the current code does not.
-  2. Suppression is **not evenly distributed**: 2G retains 81.6% of rows against
-     99.8% for 4G, and the thinnest provinces retain ~97.4% against 99.96% for
-     Uusimaa ("Unavailable" retains 48.2%). Threshold methods cost the thin
-     strata most, which is the known rural / rare-technology weakness.
+  `docs/utility.md`. Wasserstein, KS and Spearman implemented on numpy.
+  Re-run against the post-M3 releases:
+  **HEADLINE: median `tp_dl_avg` within 5% of raw for 99.61% of the 2,772
+  published cells (target >= 90%) -> PASS.** All five U1 metrics pass;
+  `http_response_time_avg` is closest to the line at 91.67%.
+  Coverage 99.47% of rows / 99.99% of subscribers. Province ranking holds at
+  Spearman 0.958; bottom-10 worst cells match 10/10.
+  Counts at epsilon 1.0: median relative error 7.3%, p90 116% - the real price
+  of honest contribution bounding (scale 1 -> 11).
+  M3's non-zero p99 fix cut severely-degraded metrics from 6 to 5 and rescued
+  `im_video_GB_sum` from -100% to -14.9%.
+  Suppression is still uneven: 2G keeps 82.14% of rows vs 99.72% for 4G; the
+  worst province keeps 49.40%.
 - **M5 Risk narrative & docs: TODO.** Risk register, row-level docs,
   data-handling statement, limitations.
 - **M6 Bonus prototype: only if M0–M5 green.** "Service quality explorer" on anonymised data.

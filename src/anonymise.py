@@ -979,7 +979,10 @@ def print_sweep_table(sweep: dict[str, Any]) -> None:
             f"{str(row['mean_rel_error_n_subscribers']):>13}"
         )
     print("-" * len(agg_header))
-    print("Suppression is decided on true counts, so it does not vary with epsilon.")
+    print(
+        "Suppression is decided on NOISY counts, so the published cell set is "
+        "covered by epsilon - and varies with it."
+    )
     print("Relative error columns are for n_subscribers; n_rows is in sweep.json.")
 
 

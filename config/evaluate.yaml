@@ -1,2 +1,6 @@
-a2_sample_size: 1000
-a6_sample_size: 200
+# Sample sizes and tolerances for the M3 attack suite. Seed 42 throughout.
+a2_sample_size: 1000          # subscribers sampled per trajectory length
+a6_sample_size: 200           # membership-inference targets
+a6_trials_per_target: 100     # in/out games per target
+a5_tolerance_subscribers: 2   # a differencing hit must land within +/- this
+sweep_epsilons: [0.5, 1.0, 2.0, null]
