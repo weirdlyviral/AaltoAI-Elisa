@@ -172,7 +172,18 @@ Quirks that shape everything:
   worst province keeps 49.40%.
 - **M5 Risk narrative & docs: TODO.** Risk register, row-level docs,
   data-handling statement, limitations.
-- **M6 Bonus prototype: only if M0–M5 green.** "Service quality explorer" on anonymised data.
+- **M6 Bonus prototype: only if M0–M5 green.** "Anonymity Assessment Studio" on
+  anonymised data (EDPB Guidelines 02/2026 framing). Specs: `docs/specs/m6.md`,
+  `docs/specs/m6_scaffold.md`. **M6.0 scaffold started early on branch
+  `m6-prototype` (structure only, in parallel with M5), not yet merged.**
+  `app/` — Home + three page placeholders, `app/lib/{data,theme,components,agent}.py`,
+  `query_aggregate` fully implemented (refuses cells with <10 subscribers),
+  mock trade-off grid at `app/lib/mock_tradeoff_grid.json`. The app is a
+  RECIPIENT: no import of the raw-data reader, no reference to the raw-data
+  secure-storage location anywhere under `app/` (tested). `tests/test_app.py`
+  (11 tests): imports clean, leak guard scans `app/` clean, mock-grid
+  fallback, refusal test, all four pages render via `streamlit.testing`.
+  Page content (6.1–6.3) not built yet.
 - **M7 Pitch & submit.**
 
 Update this Status section whenever a milestone changes state.

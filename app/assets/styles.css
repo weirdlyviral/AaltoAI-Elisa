@@ -1,0 +1,43 @@
+.aas-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.25rem 0 0.75rem 0;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.aas-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.aas-tagline {
+    color: rgba(128, 128, 128, 0.95);
+    font-size: 0.85rem;
+}
+
+.aas-badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-right: 0.4rem;
+    margin-bottom: 0.3rem;
+}
+
+.aas-footer-badge {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.5rem;
+    z-index: 999;
+}
