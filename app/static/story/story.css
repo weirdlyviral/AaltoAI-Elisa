@@ -162,6 +162,174 @@ body {
   display: block;
 }
 
+.chapter-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 3.2rem 2.2rem 2rem;
+  overflow: auto;
+  background: var(--panel);
+}
+
+.law-cards {
+  display: grid;
+  gap: 0.8rem;
+  align-content: center;
+  min-height: 100%;
+}
+
+.law-card,
+.criteria-tile {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  animation: chapter-card-in 0.65s ease both;
+}
+
+.law-card:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.law-card:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.law-card strong,
+.criteria-tile strong {
+  display: block;
+  color: var(--fg);
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.law-card p {
+  margin: 0.42rem 0 0;
+  color: var(--fg-dim);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.criteria-quote {
+  max-width: 42ch;
+  margin: 0 auto 1.2rem;
+  color: var(--fg-dim);
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.criteria-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.criteria-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 10rem;
+  animation-delay: var(--tile-delay);
+}
+
+.criteria-tile span {
+  margin-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.compliance-table {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.compliance-head,
+.compliance-row,
+.compliance-call {
+  display: grid;
+  grid-template-columns: 1.05fr 1.3fr 0.9fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.compliance-head {
+  padding: 0 0.6rem 0.45rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.compliance-row,
+.compliance-call {
+  border-top: 1px solid var(--border-soft);
+  padding: 0.48rem 0.6rem;
+  color: var(--fg-dim);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  animation: chapter-card-in 0.5s ease var(--row-delay) both;
+}
+
+.compliance-row > span:first-child,
+.compliance-call > span:first-child {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.check-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: var(--ring-safe);
+  color: #06121f;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.evidence-tag {
+  color: var(--ring-safe);
+  font-size: 0.61rem;
+  letter-spacing: 0.04em;
+}
+
+.evidence-tag.measured {
+  color: var(--net-5g);
+}
+
+.compliance-call {
+  margin-top: 0.45rem;
+  border: 1px solid rgba(230, 159, 0, 0.5);
+  border-left: 3px solid var(--net-5g);
+  color: var(--fg-dim);
+}
+
+.compliance-call > span:last-child {
+  color: var(--net-5g);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+@keyframes chapter-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ---------- legend ---------- */
 
 /* A strip above the graphic rather than an overlay inside it: the plot's
@@ -615,6 +783,16 @@ body {
   color: var(--fg-dim);
   border-left: 2px solid var(--accent);
   padding-left: 0.7rem;
+}
+
+.law-lens-label {
+  display: inline-block;
+  margin-right: 0.45rem;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .step-chip {

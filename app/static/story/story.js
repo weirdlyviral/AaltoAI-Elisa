@@ -18,12 +18,12 @@
   var DUR = 850;
   var STAGGER = 400;
 
-  var PIPELINE = ["Collect", "Strip", "Blur", "Group", "Publish", "Attack", "Measure", "Decide"];
+  var PIPELINE = ["Rules", "Collect", "Strip", "Blur", "Group", "Publish", "Attack", "Measure", "Comply", "Decide"];
 
   // ?pitch=1 — presenter mode: bigger type and only the beats worth stopping on.
   var PITCH = new URLSearchParams(window.location.search).get("pitch") === "1";
   var PITCH_FONT_SCALE = 1.2;
-  var PITCH_STOPS = ["collect", "p4", "suppress", "bars-noisy", "scoreboard", "utility-bars", "decide"];
+  var PITCH_STOPS = ["rules-criteria", "p4", "suppress", "bars-noisy", "scoreboard", "utility-bars", "comply", "decide"];
   // Below this, label sizes would swamp a phone-sized graphic.
   var MAX_UNIT_PX = 1.6;
 
@@ -34,6 +34,33 @@
   // time; no number below is hard-coded. See docs/specs/m6_home_story_v2.md.
 
   var STEPS = [
+    {
+      key: "rules-context",
+      chapter: 0,
+      headline: "The rules this data lives under.",
+      body:
+        "Elisa's data was collected to run the network, not for product analytics. Removing " +
+        "the phone number does not change its legal status; only genuine anonymisation does. " +
+        "The rules below set the context for every choice that follows: a recipient needs " +
+        "evidence that the release protects people, while Elisa still owns the purpose and " +
+        "lawful-basis decision.",
+      lawCards: true,
+      lens: null,
+      chip: null,
+    },
+    {
+      key: "rules-criteria",
+      chapter: 0,
+      headline: "What passing means.",
+      body:
+        "The challenge asks: \"Can you clearly demonstrate resistance to isolation, linkage and " +
+        "inference risks?\" We use those three questions as the test throughout the story. " +
+        "They are criteria to evidence against a defined recipient, not a promise that every " +
+        "possible attacker has disappeared.",
+      criteriaTiles: true,
+      lens: null,
+      chip: null,
+    },
     {
       key: "collect",
       chapter: 0,
@@ -47,7 +74,7 @@
         "and its colour is the network they were on.",
       stat: { value: "{n_subscribers}", label: "subscribers in a single hour" },
       chip: "profile.py · {n_rows} rows · one hour, one date",
-      lens: null,
+      lens: "GDPR Art. 5(1)(b) purpose limitation · 917/2014 traffic-data purposes",
     },
     {
       key: "tags-off",
@@ -61,7 +88,7 @@
         "Nothing else about the row changes: same tower, same moment, same measured speed.",
       stat: { value: "3", label: "direct identifier columns removed" },
       chip: "anonymise.py · drop msisdn, imsi, imei",
-      lens: null,
+      lens: "GDPR Recital 26 (pseudonymised ≠ anonymous) · EDPB 02/2026 para 50 (simple cases)",
     },
     {
       key: "rings-dashed",
@@ -75,8 +102,8 @@
         "means identifiers removed, but still identifiable. The rest of this story is about " +
         "turning those rings green.",
       stat: { value: "0", label: "direct identifiers left — and still not anonymous" },
-      chip: "EDPB Guidelines 02/2026 · Annex 1",
-      lens: "On its own, deleting identifiers satisfies none of the three criteria.",
+      chip: "anonymise.py · identifiers removed, attributes remain",
+      lens: "GDPR Recital 26 (pseudonymised ≠ anonymous) · EDPB 02/2026 para 50 (simple cases)",
     },
     {
       key: "target",
@@ -91,7 +118,7 @@
         "knows, one observation at a time.",
       stat: { value: "1", label: "target — everyone else still a candidate" },
       chip: "baseline_risk.py · R2 trajectory uniqueness",
-      lens: "EDPB lens: No Record Isolation.",
+      lens: null,
     },
     {
       key: "p1",
@@ -147,7 +174,7 @@
         "makes people unique — the sheer precision of where and when.",
       stat: { value: "{r2_4}%", label: "of subscribers uniquely identified" },
       chip: "baseline_risk.py · R2, p = 4",
-      lens: "EDPB lens: No Record Isolation and No Linkage both fail at this stage.",
+      lens: "EDPB No Linkage (para 60) / No Record Isolation (para 55)",
     },
     {
       key: "blur-place",
@@ -161,7 +188,7 @@
         "one. Watch the towers dissolve into labelled regions and the dots drift into them.",
       stat: { value: "{n_provinces}", label: "provinces as the coarsest fallback" },
       chip: "anonymise.py · area_mode = enb_tokenised",
-      lens: "EDPB lens: No Record Isolation.",
+      lens: "GDPR Art. 5(1)(c) minimisation · 917/2014 location data published only at province level",
     },
     {
       key: "blur-time",
@@ -175,7 +202,7 @@
         "small groups are exactly where the remaining risk lives.",
       stat: { value: "{time_bucket} min", label: "time resolution, down from one minute" },
       chip: "anonymise.py · time_bucket_minutes = {time_bucket}",
-      lens: "EDPB lens: No Record Isolation.",
+      lens: "GDPR Art. 5(1)(c) minimisation · 917/2014 location data published only at province level",
     },
     {
       key: "counts",
@@ -189,7 +216,7 @@
         "reading, and the one that actually matches what an attacker would be trying to isolate.",
       stat: { value: "{k}", label: "distinct people required in any published group" },
       chip: "anonymise.py · k = {k}, counted on distinct subscribers",
-      lens: "EDPB lens: No Record Isolation.",
+      lens: "EDPB para 55 (No Record Isolation) · para 36 (protection must hold for ALL individuals, hence worst-off reporting)",
     },
     {
       key: "k-rings",
@@ -203,7 +230,7 @@
         "nothing can be learned, but a floor on how precisely anyone can be picked out.",
       stat: { value: "{k}+", label: "distinct subscribers behind every green ring" },
       chip: "anonymise.py · k-anonymity on distinct subscribers",
-      lens: "EDPB lens: No Record Isolation.",
+      lens: "EDPB para 55 (No Record Isolation) · para 36 (protection must hold for ALL individuals, hence worst-off reporting)",
     },
     {
       key: "suppress",
@@ -217,7 +244,7 @@
         "see. Older network types take the worst of it.",
       stat: { value: "{cov_2g}% vs {cov_4g}%", label: "of rows kept — 2G against 4G" },
       chip: "anonymise.py · suppress groups below k",
-      lens: "EDPB lens: No Record Isolation.",
+      lens: "EDPB para 55 (No Record Isolation) · para 36 (protection must hold for ALL individuals, hence worst-off reporting)",
     },
     {
       key: "bars",
@@ -245,7 +272,7 @@
         "one person, which is exactly the trade it is meant to make.",
       stat: { value: "ε = {epsilon}", label: "privacy budget on every published count" },
       chip: "anonymise.py · Laplace, scale {dp_scale}, seed 42",
-      lens: "EDPB lens: No Inference. Noise protects the counts; the medians are protected by the group-size threshold instead.",
+      lens: "EDPB para 67, 71b (No Inference; with/without-individual test) · para 76 (aggregate differencing)",
     },
     {
       key: "attacks-isolation",
@@ -259,7 +286,7 @@
         "how much data the target used — the case that still leaves residual risk.",
       stat: { value: "6", label: "attacks implemented and measured, not assumed" },
       chip: "evaluate.py · A1, A4",
-      lens: "EDPB lens: No Record Isolation.",
+      lens: null,
     },
     {
       key: "attacks-linkage",
@@ -273,7 +300,7 @@
         "pseudonym, the trajectory attack from earlier in this story would come straight back.",
       stat: { value: "0", label: "keys, hashes or pseudonyms in the release" },
       chip: "evaluate.py · A2",
-      lens: "EDPB lens: No Linkage.",
+      lens: null,
     },
     {
       key: "attacks-inference",
@@ -287,7 +314,7 @@
         "whether you are in the release at all. Watch the last three cards resolve.",
       stat: { value: "{a6}%", label: "membership-inference accuracy against a 50% coin flip" },
       chip: "evaluate.py · A3, A5, A6",
-      lens: "EDPB lens: No Inference.",
+      lens: null,
     },
     {
       key: "scoreboard",
@@ -301,9 +328,9 @@
         "record release fails on outliers while the aggregate — the release we actually " +
         "ship — holds, with one named weakness. The verdict rules are written down, not " +
         "improvised per slide.",
-      stat: { value: "3 / 3", label: "criteria met by the aggregate release, both approaches" },
+      stat: { value: "{criteria_met} / {criteria_total}", label: "criteria met by the aggregate release, both approaches" },
       chip: "verdicts.py · rules mirrored in risk_assessment.md",
-      lens: null,
+      lens: "EDPB paras 45–49 (contextual vs simplified) · para 97 (compiling results)",
     },
     {
       key: "utility-bars",
@@ -317,7 +344,7 @@
         "the number an engineer reaches for first — holds in {u1}% of cells.",
       stat: { value: "{u1}%", label: "of cells keep median download speed within {u1_tolerance}%" },
       chip: "utility.py · U1, tolerance {u1_tolerance}%",
-      lens: null,
+      lens: "GDPR Art. 5(1)(c): only data needed for the stated purpose is kept useful",
     },
     {
       key: "utility-target",
@@ -374,6 +401,26 @@
       ],
     },
   ];
+
+  // Existing pipeline chapters shift right for RULES; COMPLY sits immediately
+  // before the final decision chapter.
+  STEPS.forEach(function (step) {
+    if (step.key === "rules-context" || step.key === "rules-criteria") return;
+    step.chapter = step.chapter === 7 ? 9 : step.chapter + 1;
+  });
+  STEPS.splice(STEPS.length - 1, 0, {
+    key: "comply",
+    chapter: 8,
+    headline: "How we comply — and what stays Elisa's call",
+    body:
+      "The controls below make the method inspectable. Ten are evidenced in the pipeline and " +
+      "its records; one question remains with Elisa's legal team. The release can demonstrate " +
+      "resistance to the three criteria, but it cannot decide its own lawful purpose.",
+    compliance: true,
+    stat: { value: "{controls_evidenced} / {controls_total}", label: "controls evidenced · 1 decision for Elisa" },
+    lens: null,
+    chip: null,
+  });
 
   // ------------------------------------------------------------- utilities
 
@@ -2203,6 +2250,59 @@
     tag.textContent = measured ? "measured" : "illustrative";
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;");
+  }
+
+  function renderChapterOverlay(step, data) {
+    var overlay = document.getElementById("chapter-overlay");
+    if (!step.lawCards && !step.criteriaTiles && !step.compliance) {
+      overlay.hidden = true;
+      overlay.innerHTML = "";
+      return;
+    }
+    overlay.hidden = false;
+    if (step.lawCards) {
+      overlay.innerHTML =
+        '<div class="law-cards">' +
+        '<article class="law-card"><strong>GDPR</strong><p>Pseudonymised data is still personal data (Recital 26); purpose limitation (Art. 5(1)(b)); data minimisation (Art. 5(1)(c)); truly anonymous data falls outside GDPR (Recital 26).</p></article>' +
+        '<article class="law-card"><strong>Finnish Act on Electronic Communications Services (917/2014)</strong><p>As summarised in Elisa\'s brief: traffic data only for listed purposes; location data beyond what transmission needs requires consent or anonymisation.</p></article>' +
+        '<article class="law-card"><strong>EDPB Guidelines 02/2026 on Anonymisation</strong><p>Adopted 7 July 2026: three criteria, assessed under a contextual and a simplified approach.</p></article>' +
+        '</div>';
+      return;
+    }
+    if (step.criteriaTiles) {
+      var criteria = [
+        ["No Record Isolation", "Can anyone be picked out?"],
+        ["No Linkage", "Can records be joined to someone?"],
+        ["No Inference", "Can something be learned about a specific person?"],
+      ];
+      overlay.innerHTML =
+        '<div class="criteria-quote">Can you clearly demonstrate resistance to isolation, linkage and inference risks?</div>' +
+        '<div class="criteria-tiles">' +
+        criteria
+          .map(function (item, index) {
+            return '<article class="criteria-tile" style="--tile-delay:' + index * 120 + 'ms"><strong>' + item[0] + '</strong><span>' + item[1] + '</span></article>';
+          })
+          .join("") +
+        '</div>';
+      return;
+    }
+    var rows = data.compliance_rows || [];
+    overlay.innerHTML =
+      '<div class="compliance-table"><div class="compliance-head"><span>Requirement</span><span>Our control</span><span>Evidence</span></div>' +
+      rows
+        .map(function (row, index) {
+          return '<div class="compliance-row" style="--row-delay:' + index * 90 + 'ms"><span><i class="check-mark">✓</i>' + escapeHtml(row.requirement) + '</span><span>' + escapeHtml(row.control) + '</span><span><b class="evidence-tag ' + row.evidence_tag.toLowerCase() + '">' + escapeHtml(row.evidence_tag) + '</b> · ' + row.evidence.map(escapeHtml).join(", ") + '</span></div>';
+        })
+        .join("") +
+      '<div class="compliance-call"><span><strong>Elisa\'s call</strong></span><span>The legal basis for running the anonymisation, and whether network-quality analytics fits the permitted purposes. We provide the evidence; the lawful-basis decision is the controller\'s.</span><span>DECISION · Elisa legal team</span></div></div>';
+  }
+
   function renderRealRelease(state, data) {
     var box = document.getElementById("real-release");
     if (!state.realRelease) {
@@ -2367,7 +2467,7 @@
           "</div></div>";
       }
       if (step.lens) {
-        html += '<div class="step-lens">' + fillTemplate(step.lens, display) + "</div>";
+        html += '<div class="step-lens"><span class="law-lens-label">Law lens</span>' + fillTemplate(step.lens, display) + "</div>";
       }
       if (step.chip) {
         html += '<div class="step-chip">' + fillTemplate(step.chip, display) + "</div>";
@@ -2435,6 +2535,7 @@
       activeIndex = stepIndex;
       renderPipeline(step.chapter, jumpToChapter);
       renderLegend(state, colors, data);
+      renderChapterOverlay(step, data);
       renderPanelTag(state);
       renderRealRelease(state, data);
     }

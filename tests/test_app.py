@@ -21,7 +21,6 @@ PAGE_FILES = [
     APP_DIR / "Home.py",
     APP_DIR / "pages" / "1_Trade-off_Explorer.py",
     APP_DIR / "pages" / "2_AI_Analyst.py",
-    APP_DIR / "pages" / "3_AI_Red_Team.py",
 ]
 
 
@@ -173,6 +172,31 @@ def test_leak_guard_scans_story_static_files_clean():
     from src import safety
 
     assert safety.leak_guard(str(STORY_DIR)) is True
+
+
+def test_compliance_rows_reference_existing_evidence():
+    from app.lib import compliance
+
+    for row in compliance.rows():
+        for evidence in row["evidence"]:
+            assert (APP_DIR.parent / evidence).exists(), evidence
+
+
+def test_compliance_measurements_are_in_story_data():
+    story_data = json.loads((STORY_DIR / "story_data.json").read_text())
+    assert story_data["baseline_unique_pct"] == 99.6
+    assert story_data["controls_evidenced"] == 10
+    assert story_data["controls_total"] == 10
+    assert story_data["criteria_met"] == 3
+    assert story_data["criteria_total"] == 3
+    assert len(story_data["compliance_rows"]) == 10
+
+
+def test_red_team_surface_is_removed():
+    assert not (APP_DIR / "pages" / ("3_" + "AI_" + "Red_Team.py")).exists()
+    text = "\n".join(path.read_text() for path in APP_DIR.rglob("*.py"))
+    assert ("AI_" + "Red_Team") not in text
+    assert ("red_" + "team") not in text
 
 
 # --------------------------------------------------------------------------- #

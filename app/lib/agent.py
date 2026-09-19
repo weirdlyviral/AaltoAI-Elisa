@@ -1,4 +1,4 @@
-"""Shared tool harness for the AI Analyst and AI Red Team pages (M6.3).
+"""Shared tool harness for the AI Analyst page.
 
 ``query_aggregate`` is the only data tool either agent gets: it runs pandas
 locally on the published aggregate release and refuses to return any cell
@@ -138,11 +138,5 @@ def run_agent(mode: str, question: str, history: list = None) -> dict:
                 
         return {"answer": "Max steps reached without an answer. Please try simplifying your query.", "tool_calls": tool_calls}
 
-    elif mode == "red_team":
-        return {
-            "answer": "Red team mode is being provisioned.",
-            "strategy": [],
-            "success_rate": 0.0
-        }
     else:
         raise ValueError(f"Unknown mode {mode}")
