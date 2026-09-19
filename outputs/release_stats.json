@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-19T08:34:31.044013+00:00",
+  "generated": "2026-09-19T08:44:53.824884+00:00",
   "seed": 42,
   "config": {
     "k": 10,
@@ -14,7 +14,7 @@
     "numeric_round_sig_figs": 3,
     "volume_top_code_quantile": 0.99,
     "aggregate_min_subscribers_per_cell": 10,
-    "dp_epsilon": null
+    "dp_epsilon": 1.0
   },
   "time_bucket": {
     "time_bucket_minutes": 15,
@@ -22,6 +22,44 @@
   },
   "rows_in": 1099340,
   "modes": {
+    "aggregate": {
+      "granularity": [
+        "time_bucket",
+        "province",
+        "radio_access_type",
+        "application_category"
+      ],
+      "single_granularity_only": true,
+      "cells_in": 3753,
+      "cells_out": 2642,
+      "cells_suppressed_primary": 1033,
+      "cells_suppressed_secondary": 78,
+      "cells_suppressed": 1111,
+      "pct_cells_suppressed": 29.603,
+      "min_subscribers_per_cell": 10,
+      "median_subscribers_per_cell": 94.0,
+      "dp": {
+        "applied": true,
+        "epsilon": 1.0,
+        "noise_scale": 1.0,
+        "mechanism": "Laplace",
+        "seed": 42,
+        "noised_columns": [
+          "n_subscribers",
+          "n_rows"
+        ],
+        "assumed_sensitivity": 1,
+        "caveats": [
+          "n_rows has a higher user-level sensitivity than 1; it is noised at the same scale as n_subscribers, so the stated epsilon is not a strict user-level guarantee for that column.",
+          "Cell suppression is decided on true counts, so which cells appear is not covered by epsilon."
+        ]
+      },
+      "count_error": {
+        "median_rel_error_n_subscribers": 0.00279141,
+        "median_rel_error_n_rows": 0.00274725
+      },
+      "rows_out": 2642
+    },
     "record": {
       "k": 10,
       "qi_columns": [
@@ -39,34 +77,6 @@
       "min_subscribers_per_group": 10,
       "median_subscribers_per_group": 79.0,
       "n_qi_groups": 27291
-    },
-    "session": {
-      "k": 10,
-      "qi_columns": [
-        "time_bucket",
-        "area",
-        "radio_access_type",
-        "application_category"
-      ],
-      "rows_in": 1099340,
-      "rows_out": 1095807,
-      "rows_escalated_to_province": 369536,
-      "rows_suppressed": 3533,
-      "pct_escalated": 33.6144,
-      "pct_suppressed": 0.321375,
-      "min_subscribers_per_group": 10,
-      "median_subscribers_per_group": 79.0,
-      "n_qi_groups": 27291
-    },
-    "aggregate": {
-      "cells_in": 3753,
-      "cells_out": 2720,
-      "cells_suppressed": 1033,
-      "pct_cells_suppressed": 27.5246,
-      "min_subscribers_per_cell": 10,
-      "median_subscribers_per_cell": 90.0,
-      "dp_noise_applied": false,
-      "rows_out": 2720
     }
   }
 }

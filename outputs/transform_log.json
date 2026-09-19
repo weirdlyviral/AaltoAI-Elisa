@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-19T08:34:31.044013+00:00",
+  "generated": "2026-09-19T08:44:53.824884+00:00",
   "config": {
     "k": 10,
     "time_bucket_minutes": 15,
@@ -13,7 +13,7 @@
     "numeric_round_sig_figs": 3,
     "volume_top_code_quantile": 0.99,
     "aggregate_min_subscribers_per_cell": 10,
-    "dp_epsilon": null
+    "dp_epsilon": 1.0
   },
   "entries": [
     {
@@ -243,13 +243,35 @@
       "rationale": "Heavy users are outliers and are identifiable by volume alone."
     },
     {
-      "field": "aggregate cells",
-      "action": "suppressed cells below the subscriber minimum",
+      "field": "area",
+      "action": "escalated to province for groups below k",
       "params": {
-        "aggregate_min_subscribers_per_cell": 10
+        "k": 10,
+        "qi_columns": [
+          "time_bucket",
+          "area",
+          "radio_access_type",
+          "application_category"
+        ]
       },
-      "rows_affected": 1033,
-      "rationale": "A thin cell describes too few people to publish."
+      "rows_affected": 369536,
+      "rationale": "Coarsening location rescues rows that would otherwise be dropped."
+    },
+    {
+      "field": "time_bucket, area, radio_access_type, application_category",
+      "action": "rows suppressed for still being below k",
+      "params": {
+        "k": 10
+      },
+      "rows_affected": 3533,
+      "rationale": "Last resort once generalisation cannot reach k distinct subscribers."
+    },
+    {
+      "field": "_subscriber",
+      "action": "internal key dropped before write",
+      "params": {},
+      "rows_affected": 1095807,
+      "rationale": "Never released."
     }
   ]
 }

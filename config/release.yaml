@@ -10,4 +10,4 @@ numeric_winsorise: [0.01, 0.99]
 numeric_round_sig_figs: 3
 volume_top_code_quantile: 0.99
 aggregate_min_subscribers_per_cell: 10
-dp_epsilon: null             # optional Laplace noise on aggregate counts
+dp_epsilon: 1.0              # Laplace noise (seed 42) on n_subscribers and n_rows

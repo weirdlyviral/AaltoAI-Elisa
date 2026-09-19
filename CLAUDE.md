@@ -21,6 +21,18 @@ dataset, exported artefacts, debug logs, screenshots or demo materials.
 
 Deadline: Sunday 11:00 Helsinki time (aim to submit by 10:30).
 
+## Framing
+- **Headline = the aggregate release with differential privacy.** The record
+  release is published alongside it as a comparison, not as the recommendation.
+- **Risk is assessed relative to the defined recipient** (EDPS v SRB, relative
+  approach): an Elisa product team with no raw data access and no auxiliary
+  identity data. A claim that holds for that recipient is not a claim that holds
+  for Elisa itself, which holds the source.
+- **Never claim "fully anonymous".** Report the epsilon and the empirical attack
+  rates, and say what each one does and does not cover.
+- **Limitation:** anonymisation does not settle purpose limitation under
+  ePrivacy. Lawful reuse is a separate question from re-identification risk.
+
 ## Team and tooling
 Two people. Aviral builds the pipeline; teammate owns the risk register and pitch.
 Coding assistant: Claude Code. In-pipeline LLM: Mistral Large 3 on a
@@ -82,26 +94,48 @@ Quirks that shape everything:
   `outputs/classification.json`, `config/fields.yaml`. Mistral proposed classes
   from profile stats only; human review with logged overrides.
 - **M2 Anonymisation method: DONE.** Spec: `docs/specs/m2.md`. `config/release.yaml`
-  + `src/anonymise.py` produce three releases into `outputs/releases/` (gitignored):
-  **record** (no link), **session** (`session_id` under an ephemeral HMAC key
-  destroyed after use) and **aggregate** (per bucket x province x RAT x app).
-  Transforms: drop `msisdn`/`imsi`/`imei`/`tac`; 15-min `time_bucket`; `enb` ->
-  `area` (rare cells -> `<province>_OTHER`, rest -> random tokens, map in memory
-  only); rare categories -> `OTHER`; QoE winsorised at [0.01, 0.99]; volumes
-  top-coded at p99; all numerics to 3 significant figures; k=10 on DISTINCT
-  SUBSCRIBERS with escalation to province before suppression.
-  At k=10 / 15-min / tokenised: **0.32% rows suppressed, 33.6% escalated,
-  min 10 distinct subscribers per QI group**; aggregate suppresses 27.5% of cells.
-  23 tests in `tests/test_anonymise.py`; `outputs/transform_log.json`,
-  `outputs/release_stats.json`, `outputs/sweep.json`, `docs/transformations.md`.
-  Sweep (24 combinations, record mode): **every combination keeps suppression
-  under 5%** - the worst is 1.22% (native bucket, k=20). Bucket width buys more
-  than k does; `province` area_mode makes escalation a no-op.
-  Known limitation: area tokens are seeded (42) for reproducibility, so anyone
-  holding both the raw extract and this code can rebuild the map - tokenisation
-  protects an external recipient, not Elisa as the source holder.
+  + `src/anonymise.py`. **Aggregate is the headline release**, record is published
+  beside it for comparison, and **session linkage is optional** (built only with
+  an explicit `--mode session`; `--mode all` = aggregate + record).
+  Shared transforms: drop `msisdn`/`imsi`/`imei`/`tac`; 15-min `time_bucket`;
+  `enb` -> `area` (rare cells -> `<province>_OTHER`, rest -> random tokens, map in
+  memory only); rare categories -> `OTHER`; QoE winsorised at [0.01, 0.99];
+  volumes top-coded at p99; all numerics to 3 significant figures.
+  Record/session: k=10 on DISTINCT SUBSCRIBERS, escalating area to province before
+  suppressing - 0.32% rows suppressed, 33.6% escalated, min 10 subscribers/group.
+  Aggregate: ONE granularity only (no marginals or totals file), primary
+  suppression below 10 subscribers/cell plus **secondary suppression** of the
+  smallest survivor in any affected (time_bucket, province) slice, so a
+  suppressed cell cannot be recovered by subtraction - 1,033 primary + 78
+  secondary = 29.6% of cells, leaving 2,642 cells at a median of 94 subscribers.
+  **DP: Laplace, epsilon 1.0, scale 1.0, seed 42** on `n_subscribers` and `n_rows`;
+  epsilon, scale and caveats are recorded in `outputs/release_stats.json`.
+  Sweeps: record grid (24 combinations) keeps suppression under 5% everywhere,
+  worst 1.22%; aggregate grid over epsilon in {0.5, 1, 2, none} gives mean
+  relative count error 3.6% / 1.8% / 0.8% / 0 with suppression unchanged
+  (it is decided on true counts, so it cannot vary with epsilon).
+  61 tests. Artefacts: `outputs/transform_log.json`, `outputs/release_stats.json`,
+  `outputs/sweep.json`, `docs/transformations.md`.
+  Two honesty caveats to carry into the pitch: the Laplace scale assumes
+  sensitivity 1, which holds for `n_subscribers` but understates `n_rows`
+  (one subscriber contributes many rows), so the stated epsilon is not a strict
+  user-level guarantee for that column; and which cells survive suppression is
+  decided on true counts, so the published cell set is not covered by epsilon.
+  Area tokens are seeded (42) for reproducibility, so tokenisation protects an
+  external recipient, not Elisa as the source holder.
 - **M3 Risk evaluation: TODO.** Re-run baseline attacks on each release,
   plus Anonymeter singling-out / linkability / inference. Before/after table per mode.
+  Added from research:
+  - **l-diversity check:** per QI group in record mode, the share of groups where
+    every member shares the same tethering flag (`tethering_data_GB_dl_sum` > 0)
+    or the same `application_category`. k-anonymity says nothing about a group
+    that is homogeneous on a sensitive attribute.
+  - **Differencing test:** attempt to recover suppressed aggregate cells from the
+    published ones; report the success rate. This is the empirical check on the
+    secondary-suppression defence built in M2.
+  - **Membership-inference-lite:** for sampled subscribers, compare the aggregate
+    computed with and without them and report distinguishability at the chosen
+    epsilon. This is what turns "epsilon = 1.0" into a number a reviewer can read.
 - **M4 Utility metric: TODO.** e.g. median download throughput per province ×
   access type × app category within 5% of raw for ≥90% of groups.
 - **M5 Risk narrative & docs: TODO.** Risk register, row-level docs,

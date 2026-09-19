@@ -51,6 +51,11 @@ SUBSCRIBER = "_subscriber"
 QI_COLUMNS = ["time_bucket", "area", "radio_access_type", "application_category"]
 #: Grouping keys for the aggregate release.
 AGGREGATE_KEYS = ["time_bucket", "province", "radio_access_type", "application_category"]
+#: Slice within which secondary suppression is applied, so a primary-suppressed
+#: cell cannot be recovered by subtracting the survivors from a known total.
+AGGREGATE_SLICE_KEYS = ["time_bucket", "province"]
+#: Count columns that receive Laplace noise when dp_epsilon is set.
+DP_NOISED_COLUMNS = ("n_subscribers", "n_rows")
 
 QOE_PATTERN = re.compile(r"^(tp_|.*_rtt_|tcp_retrans_|http_)")
 # Must match tethering_data_GB_dl_sum as well as the plain *_GB_sum columns -
@@ -59,7 +64,11 @@ VOLUME_PATTERN = re.compile(r"_GB_[a-z_]*sum$")
 
 RARE_CATEGORY_COLUMNS = ("radio_access_type", "application_category")
 
-MODES = ("record", "session", "aggregate")
+# Aggregate is the headline release; record is published alongside it for
+# comparison. Session linkage is optional and must be asked for explicitly.
+MODES = ("aggregate", "record", "session")
+DEFAULT_MODES = ("aggregate", "record")
+OPTIONAL_MODES = ("session",)
 
 
 # --------------------------------------------------------------------------- #
@@ -447,72 +456,187 @@ def add_session_id(df: pd.DataFrame, log: TransformLog) -> pd.DataFrame:
     return work
 
 
-def build_aggregate(
+def aggregate_cells(
     df: pd.DataFrame, config: dict[str, Any], log: TransformLog
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Aggregate mode: distributions per (bucket, province, RAT, app)."""
+    """Build the aggregate at ONE granularity, with primary + secondary suppression.
+
+    Publishing a second, coarser granularity (marginals or slice totals) would
+    let an attacker subtract one from the other and recover a suppressed cell,
+    so only this table is ever released. Within a (time_bucket, province) slice
+    that has lost a cell, the smallest survivor is suppressed too: with two
+    unknowns and one equation the primary cell cannot be differenced out even if
+    the slice total is known from elsewhere.
+    """
     keys = [c for c in AGGREGATE_KEYS if c in df.columns]
     minimum = int(config["aggregate_min_subscribers_per_cell"])
-    digits = int(config["numeric_round_sig_figs"])
-    epsilon = config.get("dp_epsilon")
 
     grouped = df.groupby(keys, observed=True, dropna=False)
     out = grouped.agg(n_rows=(SUBSCRIBER, "size"), n_subscribers=(SUBSCRIBER, "nunique"))
-
     for column in qoe_columns(df):
         out[f"{column}_p10"] = grouped[column].quantile(0.10)
         out[f"{column}_median"] = grouped[column].median()
         out[f"{column}_p90"] = grouped[column].quantile(0.90)
     for column in volume_columns(df):
         out[f"{column}_total"] = grouped[column].sum()
-
     out = out.reset_index()
     cells_in = len(out)
-    keep = out["n_subscribers"] >= minimum
-    n_suppressed = int((~keep).sum())
-    out = out.loc[keep].copy()
+
+    primary = out["n_subscribers"] < minimum
+    n_primary = int(primary.sum())
+
+    secondary = pd.Series(False, index=out.index)
+    slice_keys = [c for c in AGGREGATE_SLICE_KEYS if c in out.columns]
+    if slice_keys and n_primary:
+        affected = {
+            tuple(str(v) for v in row)
+            for row in out.loc[primary, slice_keys].to_numpy()
+        }
+        survivors = out.loc[~primary]
+        victims: list[Any] = []
+        for slice_value, group in survivors.groupby(slice_keys, observed=True, dropna=False):
+            parts = slice_value if isinstance(slice_value, tuple) else (slice_value,)
+            if tuple(str(v) for v in parts) in affected:
+                victims.append(group["n_subscribers"].idxmin())
+        secondary.loc[victims] = True
+
+    n_secondary = int(secondary.sum())
+    suppressed = primary | secondary
+    out = out.loc[~suppressed].copy()
+
     log.add(
         "aggregate cells",
-        "suppressed cells below the subscriber minimum",
+        "primary suppression: cells below the subscriber minimum",
         {"aggregate_min_subscribers_per_cell": minimum},
-        n_suppressed,
+        n_primary,
         "A thin cell describes too few people to publish.",
     )
-
-    noise_added = False
-    if epsilon:
-        rng = np.random.default_rng(safety.SEED)
-        scale = 1.0 / float(epsilon)
-        for column in ("n_rows", "n_subscribers"):
-            noisy = out[column].to_numpy(dtype=float) + rng.laplace(0.0, scale, size=len(out))
-            out[column] = np.maximum(0, np.round(noisy)).astype(int)
-        noise_added = True
-        log.add(
-            "n_rows, n_subscribers",
-            "Laplace noise added to counts",
-            {"dp_epsilon": epsilon, "seed": safety.SEED},
-            len(out),
-            "Blurs exact counts so a single subscriber cannot be differenced out.",
-        )
-
-    for column in out.columns:
-        if pd.api.types.is_float_dtype(out[column]):
-            out[column] = round_sig_figs(out[column], digits)
+    log.add(
+        "aggregate cells",
+        "secondary suppression: smallest survivor in an affected slice",
+        {"slice_keys": slice_keys},
+        n_secondary,
+        "Stops a primary-suppressed cell being recovered by subtraction.",
+    )
 
     stats = {
+        "granularity": keys,
+        "single_granularity_only": True,
         "cells_in": cells_in,
         "cells_out": len(out),
-        "cells_suppressed": n_suppressed,
-        "pct_cells_suppressed": safety.round_float(100.0 * n_suppressed / cells_in)
+        "cells_suppressed_primary": n_primary,
+        "cells_suppressed_secondary": n_secondary,
+        "cells_suppressed": n_primary + n_secondary,
+        "pct_cells_suppressed": safety.round_float(
+            100.0 * (n_primary + n_secondary) / cells_in
+        )
         if cells_in
         else 0.0,
         "min_subscribers_per_cell": int(out["n_subscribers"].min()) if len(out) else 0,
         "median_subscribers_per_cell": safety.round_float(out["n_subscribers"].median())
         if len(out)
         else 0.0,
-        "dp_noise_applied": noise_added,
     }
     return out, stats
+
+
+def apply_dp_noise(
+    out: pd.DataFrame, epsilon: float | None, log: TransformLog | None = None
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Add Laplace noise to the published counts.
+
+    Two honesty notes, both recorded in release_stats.json rather than buried:
+
+    * the scale is 1/epsilon, i.e. sensitivity 1. That is right for
+      ``n_subscribers``, but one subscriber contributes many rows, so
+      ``n_rows`` has a higher user-level sensitivity and is noised more weakly
+      than a strict user-level guarantee would require;
+    * suppression decisions are made on the TRUE counts, so the choice of which
+      cells appear is not itself covered by epsilon.
+    """
+    if not epsilon:
+        return out, {
+            "applied": False,
+            "epsilon": None,
+            "noise_scale": None,
+            "mechanism": None,
+        }
+
+    scale = 1.0 / float(epsilon)
+    rng = np.random.default_rng(safety.SEED)
+    work = out.copy()
+    for column in DP_NOISED_COLUMNS:
+        if column not in work.columns:
+            continue
+        noisy = work[column].to_numpy(dtype=float) + rng.laplace(0.0, scale, size=len(work))
+        work[column] = np.maximum(0, np.round(noisy)).astype(int)
+
+    stats = {
+        "applied": True,
+        "epsilon": float(epsilon),
+        "noise_scale": safety.round_float(scale),
+        "mechanism": "Laplace",
+        "seed": safety.SEED,
+        "noised_columns": list(DP_NOISED_COLUMNS),
+        "assumed_sensitivity": 1,
+        "caveats": [
+            "n_rows has a higher user-level sensitivity than 1; it is noised at "
+            "the same scale as n_subscribers, so the stated epsilon is not a "
+            "strict user-level guarantee for that column.",
+            "Cell suppression is decided on true counts, so which cells appear "
+            "is not covered by epsilon.",
+        ],
+    }
+    if log is not None:
+        log.add(
+            ", ".join(DP_NOISED_COLUMNS),
+            "Laplace noise added to counts",
+            {"dp_epsilon": float(epsilon), "noise_scale": scale, "seed": safety.SEED},
+            len(work),
+            "Blurs exact counts so one subscriber cannot be differenced out.",
+        )
+    return work, stats
+
+
+def count_relative_error(true_frame: pd.DataFrame, noisy_frame: pd.DataFrame) -> dict[str, Any]:
+    """|noisy - true| / true per noised count column, as median and mean.
+
+    The median alone is misleading at larger epsilon: Laplace noise at scale 0.5
+    rounds to zero for more than half the cells, so the median reads 0.0 while
+    the tail still moves. The mean is reported next to it for that reason.
+    """
+    errors: dict[str, Any] = {}
+    for column in DP_NOISED_COLUMNS:
+        if column not in true_frame.columns or column not in noisy_frame.columns:
+            continue
+        true = true_frame[column].to_numpy(dtype=float)
+        noisy = noisy_frame[column].to_numpy(dtype=float)
+        usable = true > 0
+        if not usable.any():
+            errors[f"median_rel_error_{column}"] = None
+            errors[f"mean_rel_error_{column}"] = None
+            continue
+        relative = np.abs(noisy[usable] - true[usable]) / true[usable]
+        errors[f"median_rel_error_{column}"] = safety.round_float(float(np.median(relative)))
+        errors[f"mean_rel_error_{column}"] = safety.round_float(float(np.mean(relative)))
+    return errors
+
+
+def build_aggregate(
+    df: pd.DataFrame, config: dict[str, Any], log: TransformLog
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Aggregate mode: the headline release."""
+    digits = int(config["numeric_round_sig_figs"])
+    cells, stats = aggregate_cells(df, config, log)
+    noisy, dp_stats = apply_dp_noise(cells, config.get("dp_epsilon"), log)
+    stats["dp"] = dp_stats
+    if dp_stats["applied"]:
+        stats["count_error"] = count_relative_error(cells, noisy)
+
+    for column in noisy.columns:
+        if pd.api.types.is_float_dtype(noisy[column]):
+            noisy[column] = round_sig_figs(noisy[column], digits)
+    return noisy, stats
 
 
 # --------------------------------------------------------------------------- #
@@ -631,9 +755,21 @@ def render_transformations_doc(
             )
         elif "cells_suppressed" in mode_stats:
             lines.append(
-                f"- **{mode}**: {mode_stats['cells_suppressed']:,} cells suppressed "
-                f"({mode_stats['pct_cells_suppressed']}%) of {mode_stats['cells_in']:,}."
+                f"- **{mode}**: {mode_stats['cells_suppressed']:,} of "
+                f"{mode_stats['cells_in']:,} cells suppressed "
+                f"({mode_stats['pct_cells_suppressed']}%) - "
+                f"{mode_stats['cells_suppressed_primary']:,} primary "
+                f"(below the subscriber minimum) and "
+                f"{mode_stats['cells_suppressed_secondary']:,} secondary "
+                f"(smallest survivor in an affected slice)."
             )
+            dp = mode_stats.get("dp", {})
+            if dp.get("applied"):
+                lines.append(
+                    f"- **{mode} noise**: Laplace, epsilon {dp['epsilon']}, scale "
+                    f"{dp['noise_scale']}, seed {dp['seed']}, applied to "
+                    f"{', '.join(dp['noised_columns'])}."
+                )
 
     lines += [
         "",
@@ -648,6 +784,14 @@ def render_transformations_doc(
         "  tokenisation protects an external recipient, not Elisa as the source holder.",
         "- The session key is ephemeral and destroyed after use, so `session_id` cannot",
         "  be re-derived, but it does link a subscriber's rows within the release.",
+        "- Aggregates are published at one granularity only. No marginals or slice",
+        "  totals are released, and within any slice that lost a cell the smallest",
+        "  survivor is suppressed too, so a suppressed cell cannot be differenced out.",
+        "- The Laplace scale assumes sensitivity 1. That holds for `n_subscribers`;",
+        "  `n_rows` has a higher user-level sensitivity, so the stated epsilon is not",
+        "  a strict user-level guarantee for that column.",
+        "- Which cells are suppressed is decided on true counts, so the published",
+        "  cell set is not itself covered by epsilon.",
         "",
     ]
     return "\n".join(lines)
@@ -698,10 +842,12 @@ def update_fields_yaml(log: TransformLog, config: dict[str, Any]) -> Path:
 SWEEP_BUCKETS: tuple[int | None, ...] = (None, 15, 30, 60)
 SWEEP_AREA_MODES = ("enb_tokenised", "province")
 SWEEP_K = (5, 10, 20)
+#: Epsilons swept for the aggregate release. None = publish exact counts.
+SWEEP_EPSILONS: tuple[float | None, ...] = (0.5, 1.0, 2.0, None)
 
 
-def run_sweep(df: pd.DataFrame, config: dict[str, Any]) -> dict[str, Any]:
-    """Record mode only, over the configured grid. Writes no releases."""
+def run_record_sweep(df: pd.DataFrame, config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Record mode over bucket x area_mode x k. Writes no releases."""
     results: list[dict[str, Any]] = []
     for bucket in SWEEP_BUCKETS:
         for area_mode in SWEEP_AREA_MODES:
@@ -723,15 +869,61 @@ def run_sweep(df: pd.DataFrame, config: dict[str, Any]) -> dict[str, Any]:
                         "min_subscribers_per_group": stats["min_subscribers_per_group"],
                     }
                 )
+    return results
+
+
+def run_aggregate_sweep(df: pd.DataFrame, config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Aggregate mode over dp_epsilon. Suppression is independent of epsilon.
+
+    Cells are built once: suppression is decided on true counts, so only the
+    noise differs between rows. That also makes the relative error comparable
+    across epsilons on identical cells.
+    """
+    log = TransformLog()
+    prepared, _ = prepare(df, config, log)
+    cells, cell_stats = aggregate_cells(prepared, config, TransformLog())
+
+    results: list[dict[str, Any]] = []
+    for epsilon in SWEEP_EPSILONS:
+        noisy, dp_stats = apply_dp_noise(cells, epsilon)
+        if dp_stats["applied"]:
+            errors = count_relative_error(cells, noisy)
+        else:
+            errors = {f"median_rel_error_{c}": 0.0 for c in DP_NOISED_COLUMNS}
+            errors.update({f"mean_rel_error_{c}": 0.0 for c in DP_NOISED_COLUMNS})
+        results.append(
+            {
+                "dp_epsilon": "none" if epsilon is None else epsilon,
+                "noise_scale": dp_stats["noise_scale"],
+                "cells_in": cell_stats["cells_in"],
+                "cells_out": cell_stats["cells_out"],
+                "pct_cells_suppressed": cell_stats["pct_cells_suppressed"],
+                "cells_suppressed_primary": cell_stats["cells_suppressed_primary"],
+                "cells_suppressed_secondary": cell_stats["cells_suppressed_secondary"],
+                "median_subscribers_per_cell": cell_stats["median_subscribers_per_cell"],
+                **errors,
+            }
+        )
+    return results
+
+
+def run_sweep(df: pd.DataFrame, config: dict[str, Any]) -> dict[str, Any]:
+    """Both sweeps. Writes no releases."""
     return {
         "generated": datetime.now(timezone.utc).isoformat(),
         "seed": safety.SEED,
-        "grid": {
-            "time_bucket": ["native", 15, 30, 60],
-            "area_mode": list(SWEEP_AREA_MODES),
-            "k": list(SWEEP_K),
+        "record": {
+            "grid": {
+                "time_bucket": ["native", 15, 30, 60],
+                "area_mode": list(SWEEP_AREA_MODES),
+                "k": list(SWEEP_K),
+            },
+            "results": run_record_sweep(df, config),
         },
-        "results": results,
+        "aggregate": {
+            "grid": {"dp_epsilon": ["0.5", "1.0", "2.0", "none"]},
+            "results": run_aggregate_sweep(df, config),
+        },
     }
 
 
@@ -741,19 +933,44 @@ def print_sweep_table(sweep: dict[str, Any]) -> None:
         f"{'%escalated':>11} {'QI groups':>10} {'med subs/grp':>13}"
     )
     print("=" * len(header))
-    print("PARAMETER SWEEP (record mode)")
+    print("PARAMETER SWEEP - record mode")
     print("=" * len(header))
     print(header)
     print("-" * len(header))
-    for row in sweep["results"]:
+    record_results = sweep["record"]["results"]
+    for row in record_results:
         print(
             f"{str(row['time_bucket']):>8} {row['area_mode']:<15} {row['k']:>3} "
             f"{row['pct_rows_suppressed']:>12} {row['pct_rows_escalated']:>11} "
             f"{row['n_qi_groups']:>10,} {row['median_subscribers_per_group']:>13}"
         )
     print("-" * len(header))
-    under5 = [r for r in sweep["results"] if (r["pct_rows_suppressed"] or 0) < 5.0]
-    print(f"combinations with suppression < 5%: {len(under5)} of {len(sweep['results'])}")
+    under5 = [r for r in record_results if (r["pct_rows_suppressed"] or 0) < 5.0]
+    print(f"combinations with suppression < 5%: {len(under5)} of {len(record_results)}")
+
+    agg_header = (
+        f"{'dp_epsilon':>10} {'scale':>7} {'cells out':>10} {'%suppressed':>12} "
+        f"{'primary':>8} {'secondary':>10} {'med subs/cell':>14} "
+        f"{'med rel err':>12} {'mean rel err':>13}"
+    )
+    print()
+    print("=" * len(agg_header))
+    print("PARAMETER SWEEP - aggregate mode (headline release)")
+    print("=" * len(agg_header))
+    print(agg_header)
+    print("-" * len(agg_header))
+    for row in sweep["aggregate"]["results"]:
+        print(
+            f"{str(row['dp_epsilon']):>10} {str(row['noise_scale']):>7} "
+            f"{row['cells_out']:>10,} {row['pct_cells_suppressed']:>12} "
+            f"{row['cells_suppressed_primary']:>8} {row['cells_suppressed_secondary']:>10} "
+            f"{str(row['median_subscribers_per_cell']):>14} "
+            f"{str(row['median_rel_error_n_subscribers']):>12} "
+            f"{str(row['mean_rel_error_n_subscribers']):>13}"
+        )
+    print("-" * len(agg_header))
+    print("Suppression is decided on true counts, so it does not vary with epsilon.")
+    print("Relative error columns are for n_subscribers; n_rows is in sweep.json.")
 
 
 # --------------------------------------------------------------------------- #
@@ -764,7 +981,15 @@ def print_sweep_table(sweep: dict[str, Any]) -> None:
 @safety.safe_main
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="python -m src.anonymise")
-    parser.add_argument("--mode", choices=(*MODES, "all"), default="all")
+    parser.add_argument(
+        "--mode",
+        choices=(*MODES, "all"),
+        default="all",
+        help=(
+            "all = aggregate + record (the published set). 'session' is optional "
+            "and is only built when named explicitly."
+        ),
+    )
     parser.add_argument(
         "--sweep",
         action="store_true",
@@ -785,7 +1010,7 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     raw_enb = set(raw["enb"].dropna().astype(str).unique())
-    modes = list(MODES) if args.mode == "all" else [args.mode]
+    modes = list(DEFAULT_MODES) if args.mode == "all" else [args.mode]
 
     log = TransformLog()
     print("Applying transforms 1-6...")
@@ -844,11 +1069,23 @@ def main(argv: list[str] | None = None) -> None:
                 f"min subs/group {stats['min_subscribers_per_group']}"
             )
         else:
+            dp = stats.get("dp", {})
+            epsilon = dp.get("epsilon")
             print(
                 f"  {mode:<10} cells {stats['cells_out']:>9,}  "
-                f"suppressed {stats['pct_cells_suppressed']:>6}%  "
+                f"suppressed {stats['pct_cells_suppressed']:>6}% "
+                f"(primary {stats['cells_suppressed_primary']}, "
+                f"secondary {stats['cells_suppressed_secondary']})  "
                 f"min subs/cell {stats['min_subscribers_per_cell']}"
             )
+            if epsilon:
+                errors = stats.get("count_error", {})
+                print(
+                    f"  {'':<10} DP: Laplace eps={epsilon}, scale={dp['noise_scale']}; "
+                    f"median rel. error n_subscribers "
+                    f"{errors.get('median_rel_error_n_subscribers')}, "
+                    f"n_rows {errors.get('median_rel_error_n_rows')}"
+                )
     print("-" * 68)
     for path in written:
         print(f"written: {path}")

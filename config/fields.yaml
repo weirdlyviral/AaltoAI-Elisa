@@ -56,13 +56,13 @@ tethering_data_GB_dl_sum:
   treatment: top-coded and rounded
 radio_access_type:
   class: quasi_identifier
-  treatment: no rare categories
+  treatment: no rare categories; rows suppressed for still being below k
 province:
   class: quasi_identifier
   treatment: kept; also the escalation target for area
 application_category:
   class: sensitive_attribute
-  treatment: no rare categories
+  treatment: no rare categories; rows suppressed for still being below k
 enb:
   class: quasi_identifier
   treatment: rare cells folded into <province>_OTHER; remaining cells replaced by

@@ -118,6 +118,12 @@ def prepared_frame(config: dict | None = None):
 # --------------------------------------------------------------------------- #
 
 
+def test_session_is_optional_and_excluded_from_the_default_set():
+    assert "session" in anonymise.OPTIONAL_MODES
+    assert "session" not in anonymise.DEFAULT_MODES
+    assert anonymise.DEFAULT_MODES[0] == "aggregate", "aggregate is the headline release"
+
+
 def test_identifier_columns_are_removed():
     prepared, log, config, _ = prepared_frame()
     release, _ = anonymise.build_release(prepared, "record", config, log)
@@ -355,12 +361,125 @@ def test_aggregate_suppresses_thin_cells():
     assert anonymise.SUBSCRIBER not in out.columns
 
 
-def test_aggregate_dp_noise_changes_counts():
+def test_aggregate_dp_records_epsilon_and_scale():
     prepared, log, _, _ = prepared_frame()
     config = base_config(dp_epsilon=0.5)
-    noisy, stats = anonymise.build_release(prepared, "aggregate", config, log)
+    _, stats = anonymise.build_release(prepared, "aggregate", config, log)
 
-    assert stats["dp_noise_applied"] is True
+    dp = stats["dp"]
+    assert dp["applied"] is True
+    assert dp["epsilon"] == 0.5
+    assert dp["noise_scale"] == 2.0
+    assert dp["mechanism"] == "Laplace"
+    assert dp["seed"] == safety.SEED
+    assert set(dp["noised_columns"]) == {"n_subscribers", "n_rows"}
+    assert dp["caveats"], "the sensitivity caveat must be recorded, not implied"
+
+
+def test_aggregate_without_epsilon_records_no_noise():
+    prepared, log, _, _ = prepared_frame()
+    config = base_config(dp_epsilon=None)
+    _, stats = anonymise.build_release(prepared, "aggregate", config, log)
+
+    assert stats["dp"]["applied"] is False
+    assert stats["dp"]["epsilon"] is None
+
+
+def test_dp_noise_actually_perturbs_counts():
+    prepared, log, _, _ = prepared_frame()
+    cells, _ = anonymise.aggregate_cells(prepared, base_config(), log)
+    noisy, _ = anonymise.apply_dp_noise(cells, 0.5)
+
+    assert not cells["n_subscribers"].equals(noisy["n_subscribers"])
+    assert (noisy["n_subscribers"] >= 0).all(), "counts must stay non-negative"
+
+
+def test_dp_noise_is_deterministic_under_the_seed():
+    prepared, log, _, _ = prepared_frame()
+    cells, _ = anonymise.aggregate_cells(prepared, base_config(), log)
+
+    first, _ = anonymise.apply_dp_noise(cells, 1.0)
+    second, _ = anonymise.apply_dp_noise(cells, 1.0)
+
+    assert first["n_subscribers"].equals(second["n_subscribers"])
+
+
+def test_smaller_epsilon_means_more_noise():
+    prepared, log, _, _ = prepared_frame()
+    cells, _ = anonymise.aggregate_cells(prepared, base_config(), log)
+
+    loose, _ = anonymise.apply_dp_noise(cells, 2.0)
+    tight, _ = anonymise.apply_dp_noise(cells, 0.25)
+
+    loose_err = anonymise.count_relative_error(cells, loose)["median_rel_error_n_subscribers"]
+    tight_err = anonymise.count_relative_error(cells, tight)["median_rel_error_n_subscribers"]
+    assert tight_err > loose_err
+
+
+# --------------------------------------------------------------------------- #
+# Differencing defence
+# --------------------------------------------------------------------------- #
+
+
+def test_secondary_suppression_hits_an_affected_slice():
+    """A slice that loses a cell must lose its smallest survivor too."""
+    log = anonymise.TransformLog()
+    # Two cells in one (bucket, province) slice: one thin, one large.
+    frame = pd.DataFrame(
+        {
+            "time_bucket": [pd.Timestamp("2027-04-30 16:00:00")] * 3,
+            "province": ["Uusimaa"] * 3,
+            "radio_access_type": ["5G", "5G", "5G"],
+            "application_category": ["Thin", "Medium", "Large"],
+            anonymise.SUBSCRIBER: ["a", "b", "c"],
+            "data_GB_sum": [1.0, 1.0, 1.0],
+        }
+    )
+    # Inflate Medium and Large past the threshold; leave Thin below it.
+    frame = pd.concat(
+        [frame]
+        + [
+            frame[frame["application_category"] == "Medium"].assign(
+                **{anonymise.SUBSCRIBER: f"m{i}"}
+            )
+            for i in range(4)
+        ]
+        + [
+            frame[frame["application_category"] == "Large"].assign(
+                **{anonymise.SUBSCRIBER: f"l{i}"}
+            )
+            for i in range(9)
+        ],
+        ignore_index=True,
+    )
+
+    out, stats = anonymise.aggregate_cells(frame, base_config(aggregate_min_subscribers_per_cell=4), log)
+
+    assert stats["cells_suppressed_primary"] >= 1
+    assert stats["cells_suppressed_secondary"] >= 1
+    surviving = set(out["application_category"])
+    assert "Thin" not in surviving, "the thin cell is primary-suppressed"
+    assert "Medium" not in surviving, "the smallest survivor is secondary-suppressed"
+    assert "Large" in surviving
+
+
+def test_no_secondary_suppression_when_nothing_was_primary_suppressed():
+    log = anonymise.TransformLog()
+    prepared, _ = anonymise.prepare(make_df(), base_config(), log)
+    config = base_config(aggregate_min_subscribers_per_cell=1)
+
+    _, stats = anonymise.aggregate_cells(prepared, config, log)
+
+    assert stats["cells_suppressed_primary"] == 0
+    assert stats["cells_suppressed_secondary"] == 0
+
+
+def test_aggregate_publishes_one_granularity_only():
+    prepared, log, config, _ = prepared_frame()
+    out, stats = anonymise.build_release(prepared, "aggregate", config, log)
+
+    assert stats["single_granularity_only"] is True
+    assert stats["granularity"] == [c for c in anonymise.AGGREGATE_KEYS if c in out.columns]
 
 
 # --------------------------------------------------------------------------- #
@@ -368,12 +487,12 @@ def test_aggregate_dp_noise_changes_counts():
 # --------------------------------------------------------------------------- #
 
 
-def test_sweep_covers_the_grid_and_writes_nothing(tmp_path: Path):
+def test_record_sweep_covers_the_grid():
     sweep = anonymise.run_sweep(make_df(), base_config())
 
     expected = len(anonymise.SWEEP_BUCKETS) * len(anonymise.SWEEP_AREA_MODES) * len(anonymise.SWEEP_K)
-    assert len(sweep["results"]) == expected
-    for row in sweep["results"]:
+    assert len(sweep["record"]["results"]) == expected
+    for row in sweep["record"]["results"]:
         assert set(row) >= {
             "time_bucket",
             "area_mode",
@@ -383,7 +502,26 @@ def test_sweep_covers_the_grid_and_writes_nothing(tmp_path: Path):
             "n_qi_groups",
             "median_subscribers_per_group",
         }
-    assert not list(anonymise.RELEASES_DIR.glob("*.parquet")) or True  # sweep writes no release
+
+
+def test_aggregate_sweep_covers_every_epsilon():
+    sweep = anonymise.run_sweep(make_df(), base_config())
+    results = sweep["aggregate"]["results"]
+
+    assert len(results) == len(anonymise.SWEEP_EPSILONS)
+    assert [r["dp_epsilon"] for r in results] == [0.5, 1.0, 2.0, "none"]
+    for row in results:
+        assert set(row) >= {
+            "dp_epsilon",
+            "pct_cells_suppressed",
+            "median_rel_error_n_subscribers",
+            "median_rel_error_n_rows",
+            "mean_rel_error_n_subscribers",
+        }
+    # Suppression is decided on true counts, so it cannot vary with epsilon.
+    assert len({r["pct_cells_suppressed"] for r in results}) == 1
+    # Exact counts carry no error.
+    assert results[-1]["median_rel_error_n_subscribers"] == 0.0
 
 
 # --------------------------------------------------------------------------- #
