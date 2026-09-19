@@ -13,7 +13,7 @@ import streamlit as st
 
 from lib import components, data, theme
 
-theme.setup_page("Trade-off Explorer", icon="🎛️")
+theme.setup_page("Trade-off Explorer", icon="🎛️", show_sidebar=True)
 
 
 grid, is_mock = data.load_tradeoff_grid()
@@ -41,13 +41,6 @@ if "slider_tb" not in st.session_state: st.session_state.slider_tb = time_bucket
 if "slider_am" not in st.session_state: st.session_state.slider_am = area_modes[0]
 if "slider_eps" not in st.session_state: st.session_state.slider_eps = epsilons[0]
 
-st.sidebar.subheader("Configuration")
-st.session_state.slider_k = st.sidebar.select_slider("k", options=ks, value=st.session_state.slider_k)
-st.session_state.slider_tb = st.sidebar.select_slider("time bucket (min)", options=time_buckets, value=st.session_state.slider_tb)
-st.session_state.slider_am = st.sidebar.selectbox("area mode", options=area_modes, index=area_modes.index(st.session_state.slider_am) if st.session_state.slider_am in area_modes else 0)
-st.session_state.slider_eps = st.sidebar.select_slider("epsilon", options=epsilons, value=st.session_state.slider_eps)
-
-st.sidebar.divider()
 y_axis_options = {
     "A1 Row Uniqueness (Record)": "a1_uniqueness_pct",
     "A2 Trajectory Linkage (Record)": "a2_linkage_risk_pct",
@@ -64,7 +57,14 @@ metric_help_texts = {
     "A5 Differencing Recovery (Aggregate)": "Risk of recovering suppressed cells by differencing overlapping aggregate queries.",
     "A6 Inference Accuracy (Aggregate)": "Membership inference risk on the aggregate data. 50% is random guessing."
 }
-selected_y_label = st.sidebar.selectbox("Risk Metric (Y-Axis)", options=list(y_axis_options.keys()))
+with st.sidebar:
+    st.markdown("<div class='aas-sidebar-kicker'>RELEASE CONFIGURATION</div>", unsafe_allow_html=True)
+    st.session_state.slider_k = st.select_slider("k", options=ks, value=st.session_state.slider_k)
+    st.session_state.slider_tb = st.select_slider("time bucket (min)", options=time_buckets, value=st.session_state.slider_tb)
+    st.session_state.slider_am = st.selectbox("area mode", options=area_modes, index=area_modes.index(st.session_state.slider_am) if st.session_state.slider_am in area_modes else 0)
+    st.session_state.slider_eps = st.select_slider("epsilon", options=epsilons, value=st.session_state.slider_eps)
+    st.markdown("<div class='aas-sidebar-kicker aas-sidebar-kicker-spaced'>VIEW</div>", unsafe_allow_html=True)
+    selected_y_label = st.selectbox("Risk metric", options=list(y_axis_options.keys()))
 selected_y_key = y_axis_options[selected_y_label]
 
 
@@ -186,6 +186,6 @@ if sel_list and isinstance(sel_list, list) and len(sel_list) > 0:
             st.session_state.slider_eps = c_eps
             st.rerun()
 
-st.caption("The ringed, larger point is the configuration selected in the sidebar. Click any point to jump to it.")
+st.caption("The ringed, larger point is the active configuration. Click any point to jump to it.")
 
 st.divider()

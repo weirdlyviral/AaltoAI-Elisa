@@ -5,6 +5,7 @@ The step-by-step pipeline walkthrough lives in the standalone story page
 the landing hub: one hero line, three before/after statements, a big link
 into the story, and the three tool pages.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -14,7 +15,7 @@ if str(_APP_DIR) not in sys.path:
 
 import streamlit as st
 
-from lib import components, data, theme
+from lib import data, static_server, theme
 
 theme.setup_page("Anonymity Assessment Studio", icon="🔒", show_title=False)
 
@@ -80,8 +81,15 @@ with cols[2]:
 st.write("")
 
 st.markdown("<div class='aas-section-label'>Walkthrough</div>", unsafe_allow_html=True)
+try:
+    story_origin = os.getenv("AAS_STORY_URL", "").strip().rstrip("/")
+    if not story_origin:
+        story_origin = static_server.ensure_static_server()
+    story_url = f"{story_origin}/story/index.html"
+    st.link_button("Open the anonymisation walkthrough", story_url, use_container_width=True)
+except OSError:
+    st.warning("The standalone walkthrough is unavailable right now.")
 st.caption("Illustrative dots only — no real records are shown.")
-components.embedded_story()
 
 st.markdown("<div class='aas-section-label'>Tools</div>", unsafe_allow_html=True)
 

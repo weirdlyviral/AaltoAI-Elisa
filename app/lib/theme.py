@@ -78,11 +78,23 @@ PALETTE = {
 }
 
 
-def setup_page(title: str, icon: str = "🔒", show_title: bool = True) -> None:
+def setup_page(
+    title: str,
+    icon: str = "🔒",
+    show_title: bool = True,
+    show_sidebar: bool = False,
+) -> None:
     st.set_page_config(page_title=f"{title} · {PROJECT_NAME}", page_icon=icon, layout="wide")
     _load_hosted_secrets()
     _ensure_assets_served()
     _inject_css()
+    if not show_sidebar:
+        st.markdown(
+            "<style>[data-testid='stSidebar'], [data-testid='collapsedControl'] "
+            "{ display: none !important; }</style>",
+            unsafe_allow_html=True,
+        )
+    _render_nav()
     st.markdown(
         f"<div class='aas-header'>"
         f"<span class='aas-title'>{PROJECT_NAME}</span>"
@@ -93,6 +105,22 @@ def setup_page(title: str, icon: str = "🔒", show_title: bool = True) -> None:
     if show_title:
         st.title(title)
     _render_footer_badge()
+
+
+def _render_nav() -> None:
+    def page_link(path: str, label: str) -> None:
+        try:
+            st.page_link(path, label=label)
+        except st.errors.StreamlitPageNotFoundError:
+            st.markdown(f"[{label}]({path})")
+
+    nav = st.columns([2, 1.25, 1.25, 1.25, 2], gap="small")
+    with nav[1]:
+        page_link("Home.py", label="Home")
+    with nav[2]:
+        page_link("pages/1_Trade-off_Explorer.py", label="Explorer")
+    with nav[3]:
+        page_link("pages/2_AI_Analyst.py", label="AI Analyst")
 
 
 def _ensure_assets_served() -> None:

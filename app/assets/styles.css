@@ -49,6 +49,61 @@ body,
 [data-testid="stSidebarContent"] {
   background: var(--panel);
   border-right: 1px solid var(--border-soft);
+  padding-top: 1.4rem;
+}
+
+/* Navigation lives in the centered top row; the rail remains available for
+   page-specific controls such as the Explorer configuration. */
+[data-testid="stSidebarNav"] {
+  display: none !important;
+}
+
+[data-testid="stPageLink-NavLink"] {
+  align-items: center;
+  background: transparent !important;
+  border: 1px solid transparent;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.86rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.75rem;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  width: 100%;
+}
+
+[data-testid="stPageLink-NavLink"]:hover {
+  background: var(--panel) !important;
+  border-color: var(--border-soft);
+  color: var(--fg);
+}
+
+.aas-sidebar-kicker {
+  color: var(--accent);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  margin: 0 0 0.75rem;
+}
+
+.aas-sidebar-kicker-spaced {
+  border-top: 1px solid var(--border-soft);
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+}
+
+.aas-control-kicker {
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  margin: 1.2rem 0 0.4rem;
+  padding-top: 0.8rem;
 }
 
 /* Clear the fixed recipient badge so it never sits over the tool cards. */
