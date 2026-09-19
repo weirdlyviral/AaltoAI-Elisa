@@ -11,6 +11,9 @@ so pages can render a "pending" placeholder instead of crashing.
 from __future__ import annotations
 
 import json
+import io
+import os
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -149,9 +152,19 @@ def load_tradeoff_grid() -> tuple[list[dict] | None, bool]:
 @st.cache_data
 def load_aggregate_release() -> pd.DataFrame | None:
     path = OUTPUTS_DIR / "releases" / "aggregate.parquet"
-    if not path.exists():
+    if path.exists():
+        return pd.read_parquet(path)
+
+    # The release is intentionally gitignored. A hosted recipient can read a
+    # private or signed artifact URL without writing the release into the app.
+    release_url = os.getenv("AGGREGATE_RELEASE_URL", "").strip()
+    if not release_url:
         return None
-    return pd.read_parquet(path)
+    try:
+        with urllib.request.urlopen(release_url, timeout=30) as response:
+            return pd.read_parquet(io.BytesIO(response.read()))
+    except (OSError, ValueError):
+        return None
 
 
 @st.cache_data

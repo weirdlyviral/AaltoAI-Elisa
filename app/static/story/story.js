@@ -2632,11 +2632,14 @@
     window.__story = { render: render, stepCount: STEPS.length };
   }
 
-  fetch("story_data.json")
-    .then(function (response) {
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      return response.json();
-    })
+  var storyData = window.__storyData
+    ? Promise.resolve(window.__storyData)
+    : fetch("story_data.json").then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      });
+
+  storyData
     .then(boot)
     .catch(function (error) {
       document.body.innerHTML =
