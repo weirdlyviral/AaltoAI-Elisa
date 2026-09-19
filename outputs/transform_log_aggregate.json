@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-19T09:27:35.484878+00:00",
+  "generated": "2026-09-19T09:29:29.232294+00:00",
   "config": {
     "k": 10,
     "time_bucket_minutes": 15,
@@ -102,7 +102,7 @@
         "significant_figures": 3
       },
       "rows_affected": 17752,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "tp_ul_avg",
@@ -113,7 +113,7 @@
         "significant_figures": 3
       },
       "rows_affected": 16818,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "tp_dl_filtered_avg",
@@ -124,7 +124,7 @@
         "significant_figures": 3
       },
       "rows_affected": 2386,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "cont_rtt_radio_avg",
@@ -135,7 +135,7 @@
         "significant_figures": 3
       },
       "rows_affected": 11812,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "cont_rtt_internet_avg",
@@ -146,7 +146,7 @@
         "significant_figures": 3
       },
       "rows_affected": 12504,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "initial_rtt_radio_avg",
@@ -157,7 +157,7 @@
         "significant_figures": 3
       },
       "rows_affected": 15082,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "tcp_retrans_byte_ratio_downlink_avg",
@@ -168,7 +168,7 @@
         "significant_figures": 3
       },
       "rows_affected": 21004,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "tcp_retrans_byte_ratio_uplink_avg",
@@ -179,7 +179,7 @@
         "significant_figures": 3
       },
       "rows_affected": 21980,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "http_response_time_avg",
@@ -190,7 +190,7 @@
         "significant_figures": 3
       },
       "rows_affected": 10994,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "http_sr_avg",
@@ -201,7 +201,7 @@
         "significant_figures": 3
       },
       "rows_affected": 631,
-      "rationale": "Extreme values are rare enough to single a subscriber out."
+      "rationale": "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles."
     },
     {
       "field": "data_GB_sum",
@@ -248,35 +248,36 @@
       "rationale": "Heavy users are outliers and are identifiable by volume alone."
     },
     {
-      "field": "area",
-      "action": "escalated to province for groups below k",
+      "field": "n_subscribers",
+      "action": "Laplace noise added to counts",
       "params": {
-        "k": 10,
-        "qi_columns": [
+        "dp_epsilon": 1.0,
+        "noise_scale": 11.0,
+        "seed": 42
+      },
+      "rows_affected": 3753,
+      "rationale": "Blurs exact counts so one subscriber cannot be differenced out."
+    },
+    {
+      "field": "aggregate cells",
+      "action": "primary suppression: cells below the subscriber minimum",
+      "params": {
+        "aggregate_min_subscribers_per_cell": 10
+      },
+      "rows_affected": 901,
+      "rationale": "A thin cell describes too few people to publish."
+    },
+    {
+      "field": "aggregate cells",
+      "action": "secondary suppression: smallest survivor in an affected slice",
+      "params": {
+        "slice_keys": [
           "time_bucket",
-          "area",
-          "radio_access_type",
-          "application_category"
+          "province"
         ]
       },
-      "rows_affected": 369536,
-      "rationale": "Coarsening location rescues rows that would otherwise be dropped."
-    },
-    {
-      "field": "time_bucket, area, radio_access_type, application_category",
-      "action": "rows suppressed for still being below k",
-      "params": {
-        "k": 10
-      },
-      "rows_affected": 3533,
-      "rationale": "Last resort once generalisation cannot reach k distinct subscribers."
-    },
-    {
-      "field": "_subscriber",
-      "action": "internal key dropped before write",
-      "params": {},
-      "rows_affected": 1095807,
-      "rationale": "Never released."
+      "rows_affected": 80,
+      "rationale": "Stops a primary-suppressed cell being recovered by subtraction."
     }
   ]
 }

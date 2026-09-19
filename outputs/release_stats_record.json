@@ -1,0 +1,45 @@
+{
+  "generated": "2026-09-19T09:29:29.232294+00:00",
+  "seed": 42,
+  "config": {
+    "k": 10,
+    "time_bucket_minutes": 15,
+    "area_mode": "enb_tokenised",
+    "min_subscribers_per_area": 10,
+    "rare_category_min_subscribers": 10,
+    "numeric_winsorise": [
+      0.01,
+      0.99
+    ],
+    "numeric_round_sig_figs": 3,
+    "volume_top_code_quantile": 0.99,
+    "aggregate_min_subscribers_per_cell": 10,
+    "dp_epsilon": 1.0,
+    "max_cells_per_subscriber": 11
+  },
+  "time_bucket": {
+    "time_bucket_minutes": 15,
+    "native_window_minutes": 10
+  },
+  "rows_in": 1099340,
+  "modes": {
+    "record": {
+      "k": 10,
+      "qi_columns": [
+        "time_bucket",
+        "area",
+        "radio_access_type",
+        "application_category"
+      ],
+      "rows_in": 1099340,
+      "rows_out": 1095807,
+      "rows_escalated_to_province": 369536,
+      "rows_suppressed": 3533,
+      "pct_escalated": 33.6144,
+      "pct_suppressed": 0.321375,
+      "min_subscribers_per_group": 10,
+      "median_subscribers_per_group": 79.0,
+      "n_qi_groups": 27291
+    }
+  }
+}

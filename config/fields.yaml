@@ -44,16 +44,16 @@ http_sr_avg:
   treatment: winsorised and rounded
 data_GB_sum:
   class: non_identifying
-  treatment: top-coded and rounded
+  treatment: top-coded at non-zero p99 and rounded
 im_video_GB_sum:
   class: sensitive_attribute
-  treatment: top-coded and rounded
+  treatment: top-coded at non-zero p99 and rounded
 im_audio_GB_sum:
   class: sensitive_attribute
-  treatment: top-coded and rounded
+  treatment: top-coded at non-zero p99 and rounded
 tethering_data_GB_dl_sum:
   class: sensitive_attribute
-  treatment: top-coded and rounded
+  treatment: top-coded at non-zero p99 and rounded
 radio_access_type:
   class: quasi_identifier
   treatment: no rare categories; rows suppressed for still being below k

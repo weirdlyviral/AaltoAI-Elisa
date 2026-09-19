@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-19T09:27:35.484878+00:00",
+  "generated": "2026-09-19T09:29:29.232294+00:00",
   "seed": 42,
   "config": {
     "k": 10,
@@ -58,24 +58,6 @@
         "mean_rel_error_n_subscribers": 1.00153
       },
       "rows_out": 2772
-    },
-    "record": {
-      "k": 10,
-      "qi_columns": [
-        "time_bucket",
-        "area",
-        "radio_access_type",
-        "application_category"
-      ],
-      "rows_in": 1099340,
-      "rows_out": 1095807,
-      "rows_escalated_to_province": 369536,
-      "rows_suppressed": 3533,
-      "pct_escalated": 33.6144,
-      "pct_suppressed": 0.321375,
-      "min_subscribers_per_group": 10,
-      "median_subscribers_per_group": 79.0,
-      "n_qi_groups": 27291
     }
   }
 }

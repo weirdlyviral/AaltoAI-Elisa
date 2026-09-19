@@ -1,0 +1,56 @@
+[
+  {
+    "id": "A1",
+    "name": "Row uniqueness",
+    "criterion": "singling_out",
+    "attacker_knowledge": "QI values of a target",
+    "baseline": "36% of subscribers own at least one unique row",
+    "result_record": "0.00% rows in groups of size 1, 0.00% in groups < 10 (distinct subscribers), expected identification probability = 0.0249",
+    "interpretation": "Singling out by QI is effectively eliminated by k-anonymity."
+  },
+  {
+    "id": "A2",
+    "name": "Trajectory attack",
+    "criterion": "linkability",
+    "attacker_knowledge": "1 to 4 true (enb, time) points",
+    "baseline": "4 known points uniquely identify 99.6% among eligible subscribers",
+    "result_record": "unlinkable by design (no persistent identifier)",
+    "interpretation": "Rows are disjoint, so trajectories cannot be formed."
+  },
+  {
+    "id": "A3",
+    "name": "Homogeneity",
+    "criterion": "inference",
+    "attacker_knowledge": "QI values of a target",
+    "baseline": "N/A",
+    "result_record": "0% of groups homogeneous",
+    "interpretation": "Groups are reasonably diverse."
+  },
+  {
+    "id": "A4",
+    "name": "Outliers",
+    "criterion": "singling_out",
+    "attacker_knowledge": "QI values and extreme usage of a target",
+    "baseline": "N/A",
+    "result_record": "0 heavy users in groups < k",
+    "interpretation": "Top-coding reduces distinct combinations."
+  },
+  {
+    "id": "A5",
+    "name": "Differencing on aggregates",
+    "criterion": "singling_out",
+    "attacker_knowledge": "true total per (time_bucket, province) slice",
+    "baseline": "N/A",
+    "result_aggregate": "0% of suppressed cells recovered within \u00b12 subscribers with secondary suppression",
+    "interpretation": "Secondary suppression prevents precise recovery."
+  },
+  {
+    "id": "A6",
+    "name": "Membership inference on aggregates",
+    "criterion": "inference",
+    "attacker_knowledge": "all other users' data, and true target cells",
+    "baseline": "100% accuracy without DP",
+    "result_aggregate": "accuracy \u2248 50.0% (bounded by 73.1%) at epsilon 1.0",
+    "interpretation": "DP limits attacker advantage to near zero."
+  }
+]
