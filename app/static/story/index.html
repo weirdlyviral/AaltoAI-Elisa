@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anonymity Assessment Studio — Story</title>
+    <link rel="stylesheet" href="story.css" />
+  </head>
+  <body>
+    <div class="mock-banner">
+      Each dot is an illustrative subscriber — no real records are shown.
+    </div>
+    <a class="story-close" href="javascript:window.close()">close ✕</a>
+
+    <main class="story-layout">
+      <div class="text-pane" id="text-pane">
+        <div class="step-spacer" aria-hidden="true"></div>
+      </div>
+
+      <div class="graphic-pane">
+        <div class="pipeline" id="pipeline"></div>
+        <div class="legend" id="legend"></div>
+        <div class="graphic-panel">
+          <svg id="story-svg" role="img"
+               aria-label="Illustrative animated diagram of the anonymisation pipeline"></svg>
+          <div class="panel-tag" id="panel-tag"></div>
+          <div class="title-card" id="title-card">
+            <h1>How do you share network data without sharing people?</h1>
+            <p>
+              One hour of Elisa's mobile network, turned into something a product team
+              can use — and measured to show how much re-identification risk is left.
+            </p>
+            <div class="scroll-hint">Scroll to begin</div>
+          </div>
+        </div>
+        <div class="real-release" id="real-release" hidden></div>
+      </div>
+    </main>
+
+    <div class="dot-tooltip" id="dot-tooltip"></div>
+
+    <script src="../vendor/d3.v7.min.js"></script>
+    <script src="../vendor/scrollama.min.js"></script>
+    <script src="story.js"></script>
+  </body>
+</html>

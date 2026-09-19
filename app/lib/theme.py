@@ -1,4 +1,9 @@
-"""Page config, shared CSS, header and the persistent recipient-rule footer."""
+"""Page config, shared CSS, header and the persistent recipient-rule footer.
+
+Palette and typography mirror the story page (app/static/story/story.css) so
+the Streamlit app and the story read as one product. Fonts are served by the
+local static server, which is also what serves the story.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,17 +20,16 @@ RECIPIENT_BADGE_TEXT = (
     "and evaluation reports."
 )
 
-# Readable in both light and dark themes: dark text/background pairs with
-# strong contrast rather than relying on a single hue.
+# Mirrors story.css. Ring colours double as the pass/fail/residual palette.
 PALETTE = {
-    "pass": "#1a7f5a",
-    "fail": "#c23b3b",
-    "residual": "#b8860b",
-    "neutral": "#6b7280",
+    "pass": "#3ddc97",
+    "fail": "#ff6b6b",
+    "residual": "#e69f00",
+    "neutral": "#7f8ea7",
 }
 
 
-def setup_page(title: str, icon: str = "🔒") -> None:
+def setup_page(title: str, icon: str = "🔒", show_title: bool = True) -> None:
     st.set_page_config(page_title=f"{title} · {PROJECT_NAME}", page_icon=icon, layout="wide")
     _inject_css()
     st.markdown(
@@ -35,7 +39,8 @@ def setup_page(title: str, icon: str = "🔒") -> None:
         f"</div>",
         unsafe_allow_html=True,
     )
-    st.title(title)
+    if show_title:
+        st.title(title)
     _render_footer_badge()
 
 

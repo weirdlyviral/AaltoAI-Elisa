@@ -1,0 +1,254 @@
+{
+  "generated": "2026-09-19T17:23:08.861806+00:00",
+  "n_subscribers": 199195,
+  "n_rows": 1099340,
+  "a2_raw": 99.6,
+  "time_bucket": 15,
+  "time_windows": [
+    "16:00",
+    "16:15",
+    "16:30",
+    "16:45"
+  ],
+  "n_provinces": 20,
+  "k": 10,
+  "cov_2g": 82.1,
+  "cov_4g": 99.7,
+  "epsilon": 1.0,
+  "dp_scale": 11.0,
+  "median_cell_subscribers": 88.0,
+  "n_published_cells": 2772,
+  "a6": 54.0,
+  "a6_bound": 73.1,
+  "u1": 99.6,
+  "u3_jaccard": 0.99,
+  "u3_shared": 268,
+  "u3_union": 271,
+  "u3_tie_at_min": 91,
+  "u1_by_metric": [
+    {
+      "metric": "http_sr_avg",
+      "label": "Request success rate",
+      "pct_within": 99.8
+    },
+    {
+      "metric": "tp_dl_avg",
+      "label": "Download speed",
+      "pct_within": 99.61
+    },
+    {
+      "metric": "cont_rtt_radio_avg",
+      "label": "Radio latency",
+      "pct_within": 99.57
+    },
+    {
+      "metric": "tp_ul_avg",
+      "label": "Upload speed",
+      "pct_within": 95.89
+    },
+    {
+      "metric": "http_response_time_avg",
+      "label": "Response time",
+      "pct_within": 91.67
+    }
+  ],
+  "u1_target": 90.0,
+  "u1_tolerance": 5.0,
+  "u3_spearman": 0.96,
+  "dot_count": 400,
+  "dot_seed": 42,
+  "radio_shares": {
+    "4G": 73.96,
+    "5G": 25.71,
+    "2G": 0.32
+  },
+  "province_shares": {
+    "Uusimaa": 39.65,
+    "Pirkanmaa": 10.42,
+    "Varsinais-Suomi": 7.72,
+    "Pohjois-Pohjanmaa": 5.41,
+    "Keski-Suomi": 4.86,
+    "Pohjois-Savo": 3.6,
+    "Kanta-H\u00e4me": 3.44,
+    "Etel\u00e4-Pohjanmaa": 3.2,
+    "Pohjanmaa": 2.94,
+    "P\u00e4ij\u00e4t-H\u00e4me": 2.72,
+    "Satakunta": 2.66,
+    "Pohjois-Karjala": 2.62,
+    "Kymenlaakso": 2.43,
+    "Lappi": 2.22,
+    "Etel\u00e4-Karjala": 2.03,
+    "Etel\u00e4-Savo": 1.63,
+    "Kainuu": 0.99,
+    "Keski-Pohjanmaa": 0.9,
+    "Undefined": 0.5,
+    "Unavailable": 0.06
+  },
+  "attacks": [
+    {
+      "id": "A1",
+      "name": "Row uniqueness",
+      "criterion": "no_record_isolation",
+      "measured": "0.0% of published rows are unique",
+      "verdict": "pass"
+    },
+    {
+      "id": "A2",
+      "name": "Trajectory linkage",
+      "criterion": "no_linkage",
+      "measured": "no subscriber key survives \u2014 rows cannot be grouped",
+      "verdict": "pass"
+    },
+    {
+      "id": "A3",
+      "name": "Attribute homogeneity",
+      "criterion": "no_inference",
+      "measured": "0.0% of subscribers have a revealing attribute disclosed",
+      "verdict": "pass"
+    },
+    {
+      "id": "A4",
+      "name": "Outliers",
+      "criterion": "no_record_isolation",
+      "measured": "2.01% of rows fall below k if volume is also known",
+      "verdict": "residual"
+    },
+    {
+      "id": "A5",
+      "name": "Aggregate differencing",
+      "criterion": "no_inference",
+      "measured": "0.0% of suppressed cells recovered",
+      "verdict": "pass"
+    },
+    {
+      "id": "A6",
+      "name": "Membership inference",
+      "criterion": "no_inference",
+      "measured": "54.0% attacker accuracy vs a 50% coin flip",
+      "verdict": "residual"
+    }
+  ],
+  "criteria": [
+    {
+      "criterion": "no_record_isolation",
+      "label": "No Record Isolation",
+      "record_contextual": {
+        "status": "pass",
+        "why": "Every quasi-identifier group holds at least k distinct subscribers, so no record can be isolated on the published attributes.",
+        "evidence": [
+          "A1: 0.0% of rows unique, identification probability 0.025"
+        ]
+      },
+      "record_simplified": {
+        "status": "fail",
+        "why": "An attacker who also knows the target's rough data volume pushes 2.01% of rows into groups smaller than k, so those individuals are identifiable with probability above 1/k.",
+        "evidence": [
+          "A1: 0.0% of rows unique, identification probability 0.025",
+          "A4: 2.01% of rows below k when volume is known"
+        ]
+      },
+      "aggregate_contextual": {
+        "status": "pass",
+        "why": "The aggregate release contains no records at all \u2014 the smallest published unit is a cell of at least k = 10 distinct subscribers \u2014 so there is nothing to isolate.",
+        "evidence": [
+          "Every published cell clears k = 10 on the noisy count"
+        ]
+      },
+      "aggregate_simplified": {
+        "status": "pass",
+        "why": "The aggregate release contains no records at all \u2014 the smallest published unit is a cell of at least k = 10 distinct subscribers \u2014 so there is nothing to isolate.",
+        "evidence": [
+          "Every published cell clears k = 10 on the noisy count"
+        ]
+      }
+    },
+    {
+      "criterion": "no_linkage",
+      "label": "No Linkage",
+      "record_contextual": {
+        "status": "pass",
+        "why": "The record release carries no subscriber key, hash or pseudonym, so two rows cannot be attributed to the same person.",
+        "evidence": [
+          "A2: no key in the release"
+        ]
+      },
+      "record_simplified": {
+        "status": "pass",
+        "why": "The record release carries no subscriber key, hash or pseudonym, so two rows cannot be attributed to the same person.",
+        "evidence": [
+          "A2: no key in the release"
+        ]
+      },
+      "aggregate_contextual": {
+        "status": "pass",
+        "why": "No records exist to link and the subscriber key was destroyed, not hashed. Linkage-shaped risk against this release is measured under No Inference (A5 differencing, A6 membership).",
+        "evidence": [
+          "Structural: counts only, no key retained"
+        ]
+      },
+      "aggregate_simplified": {
+        "status": "pass",
+        "why": "No records exist to link and the subscriber key was destroyed, not hashed. Linkage-shaped risk against this release is measured under No Inference (A5 differencing, A6 membership).",
+        "evidence": [
+          "Structural: counts only, no key retained"
+        ]
+      }
+    },
+    {
+      "criterion": "no_inference",
+      "label": "No Inference",
+      "record_contextual": {
+        "status": "pass",
+        "why": "No quasi-identifier group is homogeneous on the revealing value of any sensitive attribute.",
+        "evidence": [
+          "A3: 0% of subscribers have an attribute disclosed"
+        ]
+      },
+      "record_simplified": {
+        "status": "residual",
+        "why": "94% of groups are homogeneous on the negative value \u2014 a far weaker disclosure, but still an inference.",
+        "evidence": [
+          "A3: 0% of subscribers have an attribute disclosed",
+          "A3: 94% of groups homogeneous on 'false'"
+        ]
+      },
+      "aggregate_contextual": {
+        "status": "pass",
+        "why": "Neither aggregate attack is attemptable by the defined recipient: differencing needs the true slice totals and membership inference needs every other subscriber's data.",
+        "evidence": [
+          "A5 and A6: not attemptable contextually"
+        ]
+      },
+      "aggregate_simplified": {
+        "status": "residual",
+        "why": "Membership inference reaches 54.0% against a 50% coin flip \u2014 a real edge, but inside the 73.1% the budget allows.",
+        "evidence": [
+          "A5: 0.0% of suppressed cells recovered",
+          "A6: 54.0% vs 50% baseline, bound 73.1%"
+        ]
+      }
+    }
+  ],
+  "criteria_columns": [
+    {
+      "release": "record",
+      "label": "Record"
+    },
+    {
+      "release": "aggregate",
+      "label": "Aggregate \u2014 what we ship"
+    }
+  ],
+  "linkage_counterfactual": {
+    "headline": "if rows were linkable, 99.3% unique at 4 points",
+    "detail": "That is the counterfactual we designed against, not a property of either release. Neither release keeps a subscriber key, so the attack has nothing to join on \u2014 which is exactly why the key was destroyed rather than hashed.",
+    "pct_unique_if_linkable": 99.3
+  },
+  "real_pct_cells_suppressed": 26.14,
+  "real_pct_subscribers_covered": 99.99,
+  "real_cells_in": 3753,
+  "r2_1": 0.0,
+  "r2_2": 12.7,
+  "r2_3": 85.8,
+  "r2_4": 99.6
+}

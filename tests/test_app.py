@@ -5,7 +5,9 @@ src.safety.load_raw, no reference to SECURE_DIR anywhere under app/.
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -13,6 +15,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
+STORY_DIR = APP_DIR / "static" / "story"
 
 PAGE_FILES = [
     APP_DIR / "Home.py",
@@ -100,3 +103,110 @@ def test_page_renders_without_exceptions(page_path):
     at = AppTest.from_file(str(page_path))
     at.run()
     assert at.exception == []
+
+
+def _assert_only_numeric_or_label(value):
+    if isinstance(value, dict):
+        for key, inner in value.items():
+            assert isinstance(key, str)
+            _assert_only_numeric_or_label(inner)
+    elif isinstance(value, list):
+        for inner in value:
+            _assert_only_numeric_or_label(inner)
+    else:
+        assert isinstance(value, (int, float, str)), f"unexpected type in story data: {type(value)}"
+
+
+def test_export_story_schema_has_no_identifiers_and_passes_leak_guard(tmp_path):
+    from app import export_story
+    from src import safety
+
+    payload = export_story.build_story_data()
+
+    for key, value in payload.items():
+        _assert_only_numeric_or_label(value)
+
+    identifier_like = {"msisdn", "imsi", "imei", "tac"}
+    assert not (set(payload.keys()) & identifier_like)
+
+    staged = tmp_path / "story_data.json"
+    staged.write_text(json.dumps(payload))
+    assert safety.check_file(staged) == []
+
+
+def test_story_data_json_has_every_key_story_js_uses():
+    story_js_text = (STORY_DIR / "story.js").read_text()
+    template_keys = set(re.findall(r"\{(\w+)\}", story_js_text))
+    direct_keys = set(re.findall(r"\bdata\.(\w+)", story_js_text))
+    used_keys = template_keys | direct_keys
+
+    story_data = json.loads((STORY_DIR / "story_data.json").read_text())
+    missing = used_keys - set(story_data.keys())
+    assert missing == set(), f"story.js references keys missing from story_data.json: {missing}"
+
+
+def test_leak_guard_scans_story_static_files_clean():
+    from src import safety
+
+    assert safety.leak_guard(str(STORY_DIR)) is True
+
+
+# --------------------------------------------------------------------------- #
+# Verdict rules (app/lib/verdicts.py)
+# --------------------------------------------------------------------------- #
+
+
+def _risk_eval():
+    return json.loads((APP_DIR.parent / "outputs" / "risk_eval.json").read_text())
+
+
+def test_verdict_rules_cover_every_release_criterion_and_approach():
+    from app.lib import verdicts
+
+    rows = verdicts.score_all(_risk_eval(), k=10, epsilon=1.0)
+
+    assert [row["criterion"] for row in rows] == list(verdicts.CRITERIA)
+    for row in rows:
+        for release in verdicts.RELEASES:
+            for approach in verdicts.APPROACHES:
+                cell = row[f"{release}_{approach}"]
+                assert cell["status"] in {verdicts.PASS, verdicts.RESIDUAL, verdicts.FAIL}
+                assert cell["why"]
+
+
+def test_aggregate_no_linkage_passes_because_no_records_exist():
+    from app.lib import verdicts
+
+    rows = {row["criterion"]: row for row in verdicts.score_all(_risk_eval())}
+    linkage = rows["no_linkage"]
+
+    assert linkage["aggregate_contextual"]["status"] == verdicts.PASS
+    assert linkage["aggregate_simplified"]["status"] == verdicts.PASS
+
+
+def test_a2_trajectory_is_a_counterfactual_not_a_verdict():
+    from app.lib import verdicts
+
+    risk = _risk_eval()
+    counterfactual = verdicts.counterfactual_linkage(risk)
+
+    assert counterfactual["pct_unique_if_linkable"] > 90
+    # ...and it must not appear as a failing linkage verdict anywhere.
+    for row in verdicts.score_all(risk):
+        if row["criterion"] == "no_linkage":
+            statuses = {row[f"{r}_{a}"]["status"] for r in verdicts.RELEASES for a in verdicts.APPROACHES}
+            assert statuses == {verdicts.PASS}
+
+
+def test_identification_probability_above_one_over_k_is_a_fail():
+    from app.lib import verdicts
+
+    risk = {
+        "attacks": [
+            {"id": "A1", "record": {"expected_identification_probability": 0.5}},
+            {"id": "A4", "record": {"qi_plus_volume": {"pct_rows_below_k": 0.0}}},
+        ]
+    }
+    rows = {row["criterion"]: row for row in verdicts.score_all(risk, k=10)}
+
+    assert rows["no_record_isolation"]["record_contextual"]["status"] == verdicts.FAIL

@@ -194,6 +194,7 @@ def headline_numbers() -> dict[str, Any]:
         "baseline_4point_pct": None,
         "coverage_subscribers_pct": None,
         "u1_headline_pct": None,
+        "a1_unique_rows_pct": None,
         "a6_accuracy_pct": None,
         "a6_bound_pct": None,
     }
@@ -215,13 +216,15 @@ def headline_numbers() -> dict[str, Any]:
 
     if risk_eval:
         for attack in risk_eval.get("attacks", []):
-            if attack.get("id") != "A6":
-                continue
-            for point in attack.get("aggregate", {}).get("worst_case_grid", []):
-                if point.get("dp_epsilon") == 1.0:
-                    numbers["a6_accuracy_pct"] = point.get("attacker_accuracy_pct")
-                    numbers["a6_bound_pct"] = point.get("theoretical_bound_pct")
-                    break
-            break
+            if attack.get("id") == "A1":
+                numbers["a1_unique_rows_pct"] = attack.get("record", {}).get(
+                    "pct_rows_in_groups_of_1"
+                )
+            if attack.get("id") == "A6":
+                for point in attack.get("aggregate", {}).get("worst_case_grid", []):
+                    if point.get("dp_epsilon") == 1.0:
+                        numbers["a6_accuracy_pct"] = point.get("attacker_accuracy_pct")
+                        numbers["a6_bound_pct"] = point.get("theoretical_bound_pct")
+                        break
 
     return numbers

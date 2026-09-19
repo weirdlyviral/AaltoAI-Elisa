@@ -2,12 +2,15 @@
 gatherUsageStats = false
 
 [theme]
-base = "light"
-primaryColor = "#2563eb"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f1f5f9"
-textColor = "#0f172a"
+base = "dark"
+primaryColor = "#6ea8fe"
+backgroundColor = "#0b1220"
+secondaryBackgroundColor = "#121b2c"
+textColor = "#e8eefb"
 font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
 
 [server]
 headless = true
