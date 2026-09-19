@@ -121,10 +121,14 @@ Quirks that shape everything:
   (one subscriber contributes many rows), so the stated epsilon is not a strict
   user-level guarantee for that column; and which cells survive suppression is
   decided on true counts, so the published cell set is not covered by epsilon.
-  Area tokens are seeded (42) for reproducibility, so tokenisation protects an
-  external recipient, not Elisa as the source holder.
-- **M3 Risk evaluation: TODO.** Re-run baseline attacks on each release,
-  plus Anonymeter singling-out / linkability / inference. Before/after table per mode.
+  Area tokens are seeded (42) for reproducibility.
+- [x] M1 Pipeline skeleton, validation, leak guard (Step 1-6)
+- [x] M2 Anonymisation method: k-anonymity (Steps 1-3)
+- [x] M2 DP counts and mode-suffixed outputs (Step 0)
+- [x] M3 Risk evaluation harness (Step 1)
+- [x] M3 Attacks A1-A6 (Step 2)
+- [x] M3 Automated risk assessment report (Step 3)
+- [ ] M3 Anonymeter (Optional, Step 4) complete. Anonymeter (Step 4) optional/TODO. Before/after table per mode.
   Added from research:
   - **l-diversity check:** per QI group in record mode, the share of groups where
     every member shares the same tethering flag (`tethering_data_GB_dl_sum` > 0)

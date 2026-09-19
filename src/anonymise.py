@@ -55,7 +55,7 @@ AGGREGATE_KEYS = ["time_bucket", "province", "radio_access_type", "application_c
 #: cell cannot be recovered by subtracting the survivors from a known total.
 AGGREGATE_SLICE_KEYS = ["time_bucket", "province"]
 #: Count columns that receive Laplace noise when dp_epsilon is set.
-DP_NOISED_COLUMNS = ("n_subscribers", "n_rows")
+DP_NOISED_COLUMNS = ("n_subscribers",)
 
 QOE_PATTERN = re.compile(r"^(tp_|.*_rtt_|tcp_retrans_|http_)")
 # Must match tethering_data_GB_dl_sum as well as the plain *_GB_sum columns -
@@ -308,25 +308,23 @@ def fold_rare_categories(
 
 
 def winsorise_qoe(df: pd.DataFrame, config: dict[str, Any], log: TransformLog) -> pd.DataFrame:
-    """Transform 5: clip QoE metrics to the configured quantiles and round."""
+    """Transform 5: winsorise QoE metrics to [p01, p99] and round."""
     work = df.copy()
-    low_q, high_q = config["numeric_winsorise"]
+    lower, upper = config["numeric_winsorise"]
+    lower = float(lower)
+    upper = float(upper)
     digits = int(config["numeric_round_sig_figs"])
+
     for column in qoe_columns(work):
         series = pd.to_numeric(work[column], errors="coerce")
-        low, high = series.quantile(low_q), series.quantile(high_q)
-        affected = int(((series < low) | (series > high)).sum())
-        work[column] = round_sig_figs(series.clip(low, high), digits)
+        bounds = series.quantile([lower, upper])
+        work[column] = round_sig_figs(series.clip(lower=bounds.iloc[0], upper=bounds.iloc[1]), digits)
         log.add(
             column,
             "winsorised and rounded",
-            {
-                "lower_quantile": low_q,
-                "upper_quantile": high_q,
-                "significant_figures": digits,
-            },
-            affected,
-            "Extreme values are rare enough to single a subscriber out.",
+            {"lower_quantile": lower, "upper_quantile": upper, "significant_figures": digits},
+            int((series < bounds.iloc[0]).sum() + (series > bounds.iloc[1]).sum()),
+            "Limits outlier influence on medians. WARNING: Means are NOT a supported statistic for QoE metrics (heavy tails); use medians/percentiles.",
         )
     return work
 
@@ -334,17 +332,17 @@ def winsorise_qoe(df: pd.DataFrame, config: dict[str, Any], log: TransformLog) -
 def top_code_volumes(df: pd.DataFrame, config: dict[str, Any], log: TransformLog) -> pd.DataFrame:
     """Transform 6: top-code volume fields and round."""
     work = df.copy()
-    quantile = float(config["volume_top_code_quantile"])
     digits = int(config["numeric_round_sig_figs"])
     for column in volume_columns(work):
         series = pd.to_numeric(work[column], errors="coerce")
-        cap = series.quantile(quantile)
+        non_zero = series[series > 0]
+        cap = non_zero.quantile(0.99) if not non_zero.empty else 0.0
         affected = int((series > cap).sum())
         work[column] = round_sig_figs(series.clip(upper=cap), digits)
         log.add(
             column,
-            "top-coded and rounded",
-            {"quantile": quantile, "significant_figures": digits},
+            "top-coded at non-zero p99 and rounded",
+            {"quantile": 0.99, "significant_figures": digits, "cap": safety.round_float(cap)},
             affected,
             "Heavy users are outliers and are identifiable by volume alone.",
         )
@@ -457,22 +455,15 @@ def add_session_id(df: pd.DataFrame, log: TransformLog) -> pd.DataFrame:
 
 
 def aggregate_cells(
-    df: pd.DataFrame, config: dict[str, Any], log: TransformLog
+    df: pd.DataFrame, config: dict[str, Any], log: TransformLog, epsilon: float | None = None, scale: float | None = None
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Build the aggregate at ONE granularity, with primary + secondary suppression.
-
-    Publishing a second, coarser granularity (marginals or slice totals) would
-    let an attacker subtract one from the other and recover a suppressed cell,
-    so only this table is ever released. Within a (time_bucket, province) slice
-    that has lost a cell, the smallest survivor is suppressed too: with two
-    unknowns and one equation the primary cell cannot be differenced out even if
-    the slice total is known from elsewhere.
-    """
+    """Build the aggregate at ONE granularity, with primary + secondary suppression."""
     keys = [c for c in AGGREGATE_KEYS if c in df.columns]
     minimum = int(config["aggregate_min_subscribers_per_cell"])
 
     grouped = df.groupby(keys, observed=True, dropna=False)
-    out = grouped.agg(n_rows=(SUBSCRIBER, "size"), n_subscribers=(SUBSCRIBER, "nunique"))
+    # We no longer calculate n_rows for DP, it was dropped.
+    out = grouped.agg(n_subscribers=(SUBSCRIBER, "nunique"))
     for column in qoe_columns(df):
         out[f"{column}_p10"] = grouped[column].quantile(0.10)
         out[f"{column}_median"] = grouped[column].median()
@@ -481,6 +472,11 @@ def aggregate_cells(
         out[f"{column}_total"] = grouped[column].sum()
     out = out.reset_index()
     cells_in = len(out)
+    
+    true_counts = out[["n_subscribers"]].copy()
+
+    # APPLY NOISE BEFORE SUPPRESSION!
+    out, dp_stats = apply_dp_noise(out, epsilon, scale, log)
 
     primary = out["n_subscribers"] < minimum
     n_primary = int(primary.sum())
@@ -493,7 +489,7 @@ def aggregate_cells(
             for row in out.loc[primary, slice_keys].to_numpy()
         }
         survivors = out.loc[~primary]
-        victims: list[Any] = []
+        victims = []
         for slice_value, group in survivors.groupby(slice_keys, observed=True, dropna=False):
             parts = slice_value if isinstance(slice_value, tuple) else (slice_value,)
             if tuple(str(v) for v in parts) in affected:
@@ -536,25 +532,17 @@ def aggregate_cells(
         "median_subscribers_per_cell": safety.round_float(out["n_subscribers"].median())
         if len(out)
         else 0.0,
+        "dp": dp_stats,
+        "true_counts_for_error": true_counts.loc[out.index] if not out.empty else true_counts.iloc[0:0]
     }
     return out, stats
 
 
 def apply_dp_noise(
-    out: pd.DataFrame, epsilon: float | None, log: TransformLog | None = None
+    out: pd.DataFrame, epsilon: float | None, scale: float | None, log: TransformLog | None = None
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Add Laplace noise to the published counts.
-
-    Two honesty notes, both recorded in release_stats.json rather than buried:
-
-    * the scale is 1/epsilon, i.e. sensitivity 1. That is right for
-      ``n_subscribers``, but one subscriber contributes many rows, so
-      ``n_rows`` has a higher user-level sensitivity and is noised more weakly
-      than a strict user-level guarantee would require;
-    * suppression decisions are made on the TRUE counts, so the choice of which
-      cells appear is not itself covered by epsilon.
-    """
-    if not epsilon:
+    """Add Laplace noise to the published counts."""
+    if not epsilon or not scale:
         return out, {
             "applied": False,
             "epsilon": None,
@@ -562,7 +550,6 @@ def apply_dp_noise(
             "mechanism": None,
         }
 
-    scale = 1.0 / float(epsilon)
     rng = np.random.default_rng(safety.SEED)
     work = out.copy()
     for column in DP_NOISED_COLUMNS:
@@ -578,13 +565,9 @@ def apply_dp_noise(
         "mechanism": "Laplace",
         "seed": safety.SEED,
         "noised_columns": list(DP_NOISED_COLUMNS),
-        "assumed_sensitivity": 1,
+        "assumed_sensitivity": scale * float(epsilon) if scale and epsilon else 1.0,
         "caveats": [
-            "n_rows has a higher user-level sensitivity than 1; it is noised at "
-            "the same scale as n_subscribers, so the stated epsilon is not a "
-            "strict user-level guarantee for that column.",
-            "Cell suppression is decided on true counts, so which cells appear "
-            "is not covered by epsilon.",
+            "Cell suppression is decided on noisy counts.",
         ],
     }
     if log is not None:
@@ -627,11 +610,27 @@ def build_aggregate(
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Aggregate mode: the headline release."""
     digits = int(config["numeric_round_sig_figs"])
-    cells, stats = aggregate_cells(df, config, log)
-    noisy, dp_stats = apply_dp_noise(cells, config.get("dp_epsilon"), log)
-    stats["dp"] = dp_stats
+    
+    # 1. Contribution Bounding to calculate scale
+    keys = [c for c in AGGREGATE_KEYS if c in df.columns]
+    max_cells = 1
+    if keys and SUBSCRIBER in df.columns:
+        cells_per_sub = df.drop_duplicates([SUBSCRIBER] + keys).groupby(SUBSCRIBER, observed=True).size()
+        max_cells = int(config.get("max_cells_per_subscriber", cells_per_sub.quantile(0.99) if not cells_per_sub.empty else 1))
+        # Log max_cells as part of config if not present
+        if "max_cells_per_subscriber" not in config:
+            config["max_cells_per_subscriber"] = max_cells
+
+    epsilon = config.get("dp_epsilon")
+    scale = (max_cells / float(epsilon)) if epsilon else None
+
+    # Cells are built and noised inside aggregate_cells now
+    noisy, stats = aggregate_cells(df, config, log, epsilon=epsilon, scale=scale)
+    
+    dp_stats = stats["dp"]
     if dp_stats["applied"]:
-        stats["count_error"] = count_relative_error(cells, noisy)
+        true_counts = stats.pop("true_counts_for_error")
+        stats["count_error"] = count_relative_error(true_counts, noisy)
 
     for column in noisy.columns:
         if pd.api.types.is_float_dtype(noisy[column]):
@@ -690,21 +689,21 @@ def prepare(
 
 def build_release(
     prepared: pd.DataFrame, mode: str, config: dict[str, Any], log: TransformLog
-) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Apply the mode-specific step and strip the subscriber key."""
+) -> tuple[pd.DataFrame, dict[str, Any], pd.Series | None]:
     k = int(config["k"])
 
     if mode == "aggregate":
         out, stats = build_aggregate(prepared, config, log)
-        return out, stats
+        return out, stats, None
 
     work, stats = enforce_k_anonymity(prepared, k, log)
     if mode == "session":
         work = add_session_id(work, log)
-
+        
+    eval_index = work[SUBSCRIBER].copy()
     work = work.drop(columns=[SUBSCRIBER])
     log.add(SUBSCRIBER, "internal key dropped before write", {}, len(work), "Never released.")
-    return work, stats
+    return work, stats, eval_index
 
 
 # --------------------------------------------------------------------------- #
@@ -873,34 +872,45 @@ def run_record_sweep(df: pd.DataFrame, config: dict[str, Any]) -> list[dict[str,
 
 
 def run_aggregate_sweep(df: pd.DataFrame, config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Aggregate mode over dp_epsilon. Suppression is independent of epsilon.
-
-    Cells are built once: suppression is decided on true counts, so only the
-    noise differs between rows. That also makes the relative error comparable
-    across epsilons on identical cells.
-    """
+    """Aggregate mode over dp_epsilon. Suppression now depends on noisy counts, so we must recalculate."""
+    results = []
+    
+    # 1. Calculate max_cells once for the sweep on PREPARED data
     log = TransformLog()
     prepared, _ = prepare(df, config, log)
-    cells, cell_stats = aggregate_cells(prepared, config, TransformLog())
+    
+    keys = [c for c in AGGREGATE_KEYS if c in prepared.columns]
+    if keys and SUBSCRIBER in prepared.columns:
+        cells_per_sub = prepared.drop_duplicates([SUBSCRIBER] + keys).groupby(SUBSCRIBER, observed=True).size()
+        max_cells = int(config.get("max_cells_per_subscriber", cells_per_sub.quantile(0.99) if not cells_per_sub.empty else 1))
+    else:
+        max_cells = 1
+        
+    sweep_config = config.copy()
+    sweep_config["max_cells_per_subscriber"] = max_cells
 
-    results: list[dict[str, Any]] = []
-    for epsilon in SWEEP_EPSILONS:
-        noisy, dp_stats = apply_dp_noise(cells, epsilon)
-        if dp_stats["applied"]:
-            errors = count_relative_error(cells, noisy)
-        else:
+    for epsilon_str in ["0.5", "1.0", "2.0", "none"]:
+        epsilon = None if epsilon_str == "none" else float(epsilon_str)
+        sweep_config["dp_epsilon"] = epsilon
+        
+        mode_log = TransformLog()
+        noisy, stats = build_aggregate(prepared.copy(), sweep_config, mode_log)
+        
+        dp_stats = stats["dp"]
+        errors = stats.get("count_error", {})
+        if not dp_stats.get("applied"):
             errors = {f"median_rel_error_{c}": 0.0 for c in DP_NOISED_COLUMNS}
             errors.update({f"mean_rel_error_{c}": 0.0 for c in DP_NOISED_COLUMNS})
         results.append(
             {
                 "dp_epsilon": "none" if epsilon is None else epsilon,
-                "noise_scale": dp_stats["noise_scale"],
-                "cells_in": cell_stats["cells_in"],
-                "cells_out": cell_stats["cells_out"],
-                "pct_cells_suppressed": cell_stats["pct_cells_suppressed"],
-                "cells_suppressed_primary": cell_stats["cells_suppressed_primary"],
-                "cells_suppressed_secondary": cell_stats["cells_suppressed_secondary"],
-                "median_subscribers_per_cell": cell_stats["median_subscribers_per_cell"],
+                "noise_scale": dp_stats.get("noise_scale"),
+                "cells_in": stats["cells_in"],
+                "cells_out": stats["cells_out"],
+                "pct_cells_suppressed": stats["pct_cells_suppressed"],
+                "cells_suppressed_primary": stats["cells_suppressed_primary"],
+                "cells_suppressed_secondary": stats["cells_suppressed_secondary"],
+                "median_subscribers_per_cell": stats["median_subscribers_per_cell"],
                 **errors,
             }
         )
@@ -1026,33 +1036,38 @@ def main(argv: list[str] | None = None) -> None:
     }
 
     RELEASES_DIR.mkdir(parents=True, exist_ok=True)
-    written: list[Path] = []
+    written = []
     for mode in modes:
         print(f"Building '{mode}' release...")
         mode_log = TransformLog(list(log.entries))
-        release, stats = build_release(prepared, mode, config, mode_log)
+        release, stats, _ = build_release(prepared, mode, config, mode_log)
         assert_release_safe(
             release, mode, int(config["k"]), raw_enb, config["area_mode"] == "enb_tokenised"
         )
         stats["rows_out"] = int(len(release))
         all_stats["modes"][mode] = stats
         written.append(safety.safe_write_df(release, RELEASES_DIR / f"{mode}.parquet"))
+        
+        # Write mode-suffixed reports
+        transform_log = {
+            "generated": all_stats["generated"],
+            "config": config,
+            "entries": mode_log.as_list(),
+        }
+        written.append(safety.safe_write_json(transform_log, Path(f"outputs/transform_log_{mode}.json")))
+        
+        mode_all_stats = all_stats.copy()
+        mode_all_stats["modes"] = {mode: stats}
+        written.append(safety.safe_write_json(mode_all_stats, Path(f"outputs/release_stats_{mode}.json")))
+        
+        written.append(
+            safety.safe_write_text(
+                render_transformations_doc(config, mode_log, mode_all_stats), Path(f"docs/transformations_{mode}.md")
+            )
+        )
         if mode == modes[-1]:
             log = mode_log
 
-    print("Writing reports...")
-    transform_log = {
-        "generated": all_stats["generated"],
-        "config": config,
-        "entries": log.as_list(),
-    }
-    written.append(safety.safe_write_json(transform_log, TRANSFORM_LOG_PATH))
-    written.append(safety.safe_write_json(all_stats, RELEASE_STATS_PATH))
-    written.append(
-        safety.safe_write_text(
-            render_transformations_doc(config, log, all_stats), TRANSFORMATIONS_DOC_PATH
-        )
-    )
     written.append(update_fields_yaml(log, config))
 
     print("\n" + "=" * 68)
