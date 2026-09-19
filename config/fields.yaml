@@ -2,70 +2,70 @@
 # 'treatment' is filled in by the anonymisation step.
 time_start:
   class: quasi_identifier
-  treatment: TBD
+  treatment: floored to hour
 msisdn:
   class: direct_identifier
-  treatment: TBD
+  treatment: replaced with daily pseudonym (ephemeral salted hash)
 imsi:
   class: direct_identifier
-  treatment: TBD
+  treatment: dropped
 imei:
   class: direct_identifier
-  treatment: TBD
+  treatment: dropped
 tp_dl_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 tp_ul_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 tp_dl_filtered_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 cont_rtt_radio_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 cont_rtt_internet_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 initial_rtt_radio_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 tcp_retrans_byte_ratio_downlink_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 tcp_retrans_byte_ratio_uplink_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 http_response_time_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 http_sr_avg:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 data_GB_sum:
   class: non_identifying
-  treatment: TBD
+  treatment: kept as is
 im_video_GB_sum:
   class: sensitive_attribute
-  treatment: TBD
+  treatment: top-coded at non-zero p99 (0.720) and rounded to 3 decimals
 im_audio_GB_sum:
   class: sensitive_attribute
-  treatment: TBD
+  treatment: top-coded at non-zero p99 (0.097) and rounded to 3 decimals
 tethering_data_GB_dl_sum:
   class: sensitive_attribute
-  treatment: TBD
+  treatment: top-coded at non-zero p99 (0.794) and rounded to 3 decimals
 radio_access_type:
   class: quasi_identifier
-  treatment: TBD
+  treatment: used for 5-anonymity grouping
 province:
   class: quasi_identifier
-  treatment: TBD
+  treatment: used for 5-anonymity grouping
 application_category:
   class: sensitive_attribute
-  treatment: TBD
+  treatment: kept as is
 enb:
   class: quasi_identifier
-  treatment: TBD
+  treatment: grouped 46 rare values into OTHER and hashed remaining to short strings
 tac:
   class: quasi_identifier
-  treatment: TBD
+  treatment: grouped 0 rare values into OTHER

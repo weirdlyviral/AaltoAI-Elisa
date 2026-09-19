@@ -1,0 +1,34 @@
+{
+  "linkage": {
+    "linkage_window": "daily",
+    "dropped_identifiers": [
+      "msisdn",
+      "imsi",
+      "imei"
+    ]
+  },
+  "generalization": {
+    "k_threshold": 5,
+    "actions": {
+      "time_start": "floored to hour",
+      "enb": "grouped 46 rare values into OTHER and hashed remaining to short strings",
+      "tac": "grouped 0 rare values into OTHER",
+      "im_video_GB_sum": "top-coded at non-zero p99 (0.720) and rounded to 3 decimals",
+      "im_audio_GB_sum": "top-coded at non-zero p99 (0.097) and rounded to 3 decimals",
+      "tethering_data_GB_dl_sum": "top-coded at non-zero p99 (0.794) and rounded to 3 decimals"
+    }
+  },
+  "k_anonymity": {
+    "qi_set": [
+      "time_start",
+      "radio_access_type",
+      "province",
+      "enb",
+      "tac"
+    ],
+    "suppressed_rows": 1856,
+    "pct_suppressed": 0.00168829,
+    "k_threshold": 5
+  },
+  "final_rows": 1097484
+}
