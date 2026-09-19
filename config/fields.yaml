@@ -1,11 +1,11 @@
 # Field treatment plan. 'class' is the reviewed privacy class;
-# 'treatment' is filled in by the anonymisation step.
+# 'treatment' is filled in by src/anonymise.py (M2).
 time_start:
   class: quasi_identifier
-  treatment: floored to hour
+  treatment: floored to time_bucket
 msisdn:
   class: direct_identifier
-  treatment: replaced with daily pseudonym (ephemeral salted hash)
+  treatment: dropped
 imsi:
   class: direct_identifier
   treatment: dropped
@@ -14,58 +14,59 @@ imei:
   treatment: dropped
 tp_dl_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 tp_ul_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 tp_dl_filtered_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 cont_rtt_radio_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 cont_rtt_internet_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 initial_rtt_radio_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 tcp_retrans_byte_ratio_downlink_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 tcp_retrans_byte_ratio_uplink_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 http_response_time_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 http_sr_avg:
   class: non_identifying
-  treatment: kept as is
+  treatment: winsorised and rounded
 data_GB_sum:
   class: non_identifying
-  treatment: kept as is
+  treatment: top-coded and rounded
 im_video_GB_sum:
   class: sensitive_attribute
-  treatment: top-coded at non-zero p99 (0.720) and rounded to 3 decimals
+  treatment: top-coded and rounded
 im_audio_GB_sum:
   class: sensitive_attribute
-  treatment: top-coded at non-zero p99 (0.097) and rounded to 3 decimals
+  treatment: top-coded and rounded
 tethering_data_GB_dl_sum:
   class: sensitive_attribute
-  treatment: top-coded at non-zero p99 (0.794) and rounded to 3 decimals
+  treatment: top-coded and rounded
 radio_access_type:
   class: quasi_identifier
-  treatment: used for 5-anonymity grouping
+  treatment: no rare categories
 province:
   class: quasi_identifier
-  treatment: used for 5-anonymity grouping
+  treatment: kept; also the escalation target for area
 application_category:
   class: sensitive_attribute
-  treatment: kept as is
+  treatment: no rare categories
 enb:
   class: quasi_identifier
-  treatment: grouped 46 rare values into OTHER and hashed remaining to short strings
+  treatment: rare cells folded into <province>_OTHER; remaining cells replaced by
+    random tokens
 tac:
   class: quasi_identifier
-  treatment: grouped 0 rare values into OTHER
+  treatment: dropped

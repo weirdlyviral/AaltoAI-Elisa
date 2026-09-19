@@ -54,7 +54,11 @@ COLUMN_ALIASES = {"enb_id": "enb"}
 FINDING_KINDS = frozenset({"registered_id", "long_digit_run"})
 
 TABULAR_SUFFIXES = frozenset({".csv", ".parquet"})
-TEXT_SUFFIXES = frozenset({".json", ".jsonl", ".md", ".html", ".txt", ".log", ".yaml", ".yml"})
+# .ipynb is JSON, and a committed notebook carries its stored cell outputs -
+# a direct route for raw rows to reach the repo - so it is scanned as text.
+TEXT_SUFFIXES = frozenset(
+    {".json", ".jsonl", ".md", ".html", ".txt", ".log", ".yaml", ".yml", ".ipynb"}
+)
 SCANNABLE_SUFFIXES = TABULAR_SUFFIXES | TEXT_SUFFIXES
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9]{6,}")
@@ -302,10 +306,63 @@ def _check_tabular(path: Path) -> list[Finding]:
     return findings
 
 
+#: Notebook output MIME types whose payload is base64-encoded binary. A real
+#: identifier cannot be read out of one, but the base64 alphabet throws up
+#: incidental 10+ digit runs, so these payloads are skipped by value.
+BINARY_MIME_PREFIXES = ("image/", "video/", "audio/", "application/pdf")
+
+
+def _flatten(value: Any) -> str:
+    """Notebook fields are either a string or a list of string chunks."""
+    if isinstance(value, list):
+        return "".join(str(chunk) for chunk in value)
+    return "" if value is None else str(value)
+
+
+def _check_notebook(path: Path) -> list[Finding]:
+    """Scan a notebook cell by cell.
+
+    Stored cell outputs are the real leak route here - a stray ``df.head()``
+    lands raw rows straight into the committed file - so they are scanned along
+    with the source. Base64 image payloads are skipped (see
+    :data:`BINARY_MIME_PREFIXES`); everything else is treated as text.
+    """
+    source_name = str(path)
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    try:
+        notebook = json.loads(raw)
+    except json.JSONDecodeError:
+        # Not valid JSON - fall back to a conservative whole-file text scan.
+        return check_text(raw, source_name)
+
+    findings: list[Finding] = []
+    for index, cell in enumerate(notebook.get("cells", []), start=1):
+        if not isinstance(cell, dict):
+            continue
+        findings.extend(
+            _scan_value(_flatten(cell.get("source")), source_name, f"cell {index} source")
+        )
+        for output in cell.get("outputs", []) or []:
+            if not isinstance(output, dict):
+                continue
+            location = f"cell {index} output"
+            findings.extend(_scan_value(_flatten(output.get("text")), source_name, location))
+            findings.extend(
+                _scan_value(_flatten(output.get("traceback")), source_name, location)
+            )
+            for mime, payload in (output.get("data") or {}).items():
+                if str(mime).startswith(BINARY_MIME_PREFIXES):
+                    continue
+                findings.extend(_scan_value(_flatten(payload), source_name, location))
+    return findings
+
+
 def check_file(path: str | os.PathLike[str]) -> list[Finding]:
     """Scan a single artefact. Unsupported suffixes return no findings."""
     target = Path(path)
     suffix = target.suffix.lower()
+    if suffix == ".ipynb":
+        return _check_notebook(target)
     if suffix in TABULAR_SUFFIXES:
         return _check_tabular(target)
     if suffix in TEXT_SUFFIXES:

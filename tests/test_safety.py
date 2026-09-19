@@ -392,3 +392,69 @@ def test_safe_write_text_round_trip_and_refusal(tmp_path: Path):
     with pytest.raises(safety.LeakError):
         safety.safe_write_text(f"note: {FAKE_IMSI}\n", tmp_path / "bad.yaml")
     assert not (tmp_path / "bad.yaml").exists()
+
+
+def test_check_file_scans_notebook_outputs(tmp_path: Path):
+    """A notebook's stored outputs are a real leak route, so .ipynb is scanned."""
+    register_fakes()
+    notebook = {
+        "cells": [
+            {
+                "cell_type": "code",
+                "source": ["df.head()\n"],
+                "outputs": [
+                    {
+                        "output_type": "execute_result",
+                        "data": {"text/plain": [f"0  {FAKE_MSISDN}  ENB1\n"]},
+                    }
+                ],
+            }
+        ],
+        "metadata": {},
+        "nbformat": 4,
+    }
+    path = tmp_path / "leaky.ipynb"
+    path.write_text(json.dumps(notebook, indent=1), encoding="utf-8")
+
+    findings = safety.check_file(path)
+
+    assert [f.kind for f in findings] == ["registered_id"]
+    assert findings[0].location == "cell 1 output"
+    assert FAKE_MSISDN not in repr(findings[0])
+
+
+def test_check_file_skips_base64_images_in_notebooks(tmp_path: Path):
+    """A rendered chart is base64 binary; its digit runs are not a leak."""
+    register_fakes()
+    notebook = {
+        "cells": [
+            {
+                "cell_type": "code",
+                "source": ["plt.show()\n"],
+                "outputs": [
+                    {
+                        "data": {
+                            "image/png": "iVBORw0KGgoAAAANSUhEUg1234567890123456789",
+                            "text/plain": ["<Figure size 1000x500 with 1 Axes>"],
+                        }
+                    }
+                ],
+            }
+        ],
+        "metadata": {},
+        "nbformat": 4,
+    }
+    path = tmp_path / "chart.ipynb"
+    path.write_text(json.dumps(notebook, indent=1), encoding="utf-8")
+
+    assert safety.check_file(path) == []
+
+
+def test_check_file_falls_back_to_text_scan_for_broken_notebook(tmp_path: Path):
+    register_fakes()
+    path = tmp_path / "broken.ipynb"
+    path.write_text(f"{{not json at all {FAKE_MSISDN}", encoding="utf-8")
+
+    findings = safety.check_file(path)
+
+    assert [f.kind for f in findings] == ["registered_id"]

@@ -1,34 +1,255 @@
 {
-  "linkage": {
-    "linkage_window": "daily",
-    "dropped_identifiers": [
-      "msisdn",
-      "imsi",
-      "imei"
-    ]
-  },
-  "generalization": {
-    "k_threshold": 5,
-    "actions": {
-      "time_start": "floored to hour",
-      "enb": "grouped 46 rare values into OTHER and hashed remaining to short strings",
-      "tac": "grouped 0 rare values into OTHER",
-      "im_video_GB_sum": "top-coded at non-zero p99 (0.720) and rounded to 3 decimals",
-      "im_audio_GB_sum": "top-coded at non-zero p99 (0.097) and rounded to 3 decimals",
-      "tethering_data_GB_dl_sum": "top-coded at non-zero p99 (0.794) and rounded to 3 decimals"
-    }
-  },
-  "k_anonymity": {
-    "qi_set": [
-      "time_start",
-      "radio_access_type",
-      "province",
-      "enb",
-      "tac"
+  "generated": "2026-09-19T08:34:31.044013+00:00",
+  "config": {
+    "k": 10,
+    "time_bucket_minutes": 15,
+    "area_mode": "enb_tokenised",
+    "min_subscribers_per_area": 10,
+    "rare_category_min_subscribers": 10,
+    "numeric_winsorise": [
+      0.01,
+      0.99
     ],
-    "suppressed_rows": 1856,
-    "pct_suppressed": 0.00168829,
-    "k_threshold": 5
+    "numeric_round_sig_figs": 3,
+    "volume_top_code_quantile": 0.99,
+    "aggregate_min_subscribers_per_cell": 10,
+    "dp_epsilon": null
   },
-  "final_rows": 1097484
+  "entries": [
+    {
+      "field": "msisdn",
+      "action": "dropped",
+      "params": {},
+      "rows_affected": 1099340,
+      "rationale": "Direct identifier, removed before any release."
+    },
+    {
+      "field": "imsi",
+      "action": "dropped",
+      "params": {},
+      "rows_affected": 1099340,
+      "rationale": "Direct identifier, removed before any release."
+    },
+    {
+      "field": "imei",
+      "action": "dropped",
+      "params": {},
+      "rows_affected": 1099340,
+      "rationale": "Direct identifier, removed before any release."
+    },
+    {
+      "field": "tac",
+      "action": "dropped",
+      "params": {},
+      "rows_affected": 1099340,
+      "rationale": "Direct identifier; on real data tac would become a device class."
+    },
+    {
+      "field": "time_start",
+      "action": "floored to time_bucket",
+      "params": {
+        "time_bucket_minutes": 15,
+        "native_window_minutes": 10
+      },
+      "rows_affected": 1099340,
+      "rationale": "Coarsens the timestamp so a cell visit is not pinpointed to the second."
+    },
+    {
+      "field": "enb",
+      "action": "rare cells folded into <province>_OTHER",
+      "params": {
+        "min_subscribers_per_area": 10,
+        "n_rare_cells": 99
+      },
+      "rows_affected": 484,
+      "rationale": "A cell with few subscribers is close to an identifier on its own."
+    },
+    {
+      "field": "enb",
+      "action": "remaining cells replaced by random tokens",
+      "params": {
+        "area_mode": "enb_tokenised",
+        "n_tokens": 1884
+      },
+      "rows_affected": 1098856,
+      "rationale": "Token order is random and the map is never persisted."
+    },
+    {
+      "field": "radio_access_type",
+      "action": "no rare categories",
+      "params": {
+        "min_subscribers": 10
+      },
+      "rows_affected": 0,
+      "rationale": ""
+    },
+    {
+      "field": "application_category",
+      "action": "no rare categories",
+      "params": {
+        "min_subscribers": 10
+      },
+      "rows_affected": 0,
+      "rationale": ""
+    },
+    {
+      "field": "tp_dl_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 17752,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "tp_ul_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 16818,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "tp_dl_filtered_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 2386,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "cont_rtt_radio_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 11812,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "cont_rtt_internet_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 12504,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "initial_rtt_radio_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 15082,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "tcp_retrans_byte_ratio_downlink_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 21004,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "tcp_retrans_byte_ratio_uplink_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 21980,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "http_response_time_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 10994,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "http_sr_avg",
+      "action": "winsorised and rounded",
+      "params": {
+        "lower_quantile": 0.01,
+        "upper_quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 631,
+      "rationale": "Extreme values are rare enough to single a subscriber out."
+    },
+    {
+      "field": "data_GB_sum",
+      "action": "top-coded and rounded",
+      "params": {
+        "quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 10994,
+      "rationale": "Heavy users are outliers and are identifiable by volume alone."
+    },
+    {
+      "field": "im_video_GB_sum",
+      "action": "top-coded and rounded",
+      "params": {
+        "quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 3417,
+      "rationale": "Heavy users are outliers and are identifiable by volume alone."
+    },
+    {
+      "field": "im_audio_GB_sum",
+      "action": "top-coded and rounded",
+      "params": {
+        "quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 10994,
+      "rationale": "Heavy users are outliers and are identifiable by volume alone."
+    },
+    {
+      "field": "tethering_data_GB_dl_sum",
+      "action": "top-coded and rounded",
+      "params": {
+        "quantile": 0.99,
+        "significant_figures": 3
+      },
+      "rows_affected": 10994,
+      "rationale": "Heavy users are outliers and are identifiable by volume alone."
+    },
+    {
+      "field": "aggregate cells",
+      "action": "suppressed cells below the subscriber minimum",
+      "params": {
+        "aggregate_min_subscribers_per_cell": 10
+      },
+      "rows_affected": 1033,
+      "rationale": "A thin cell describes too few people to publish."
+    }
+  ]
 }

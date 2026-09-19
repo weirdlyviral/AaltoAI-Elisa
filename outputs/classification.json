@@ -1,6 +1,6 @@
 {
-  "reviewer": "OR",
-  "timestamp": "2026-09-19T07:20:43.237063+00:00",
+  "reviewer": "AM",
+  "timestamp": "2026-09-19T07:24:14.859999+00:00",
   "n_fields": 23,
   "fields": [
     {
@@ -12,8 +12,8 @@
       "rationale": "Time bins combined with location or device can re-identify users.",
       "proposed_treatment": "Generalize to hour or day.",
       "confidence": 0.9,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:38.277056+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:23:58.823299+00:00"
     },
     {
       "field": "msisdn",
@@ -24,8 +24,8 @@
       "rationale": "Phone number directly identifies a subscriber.",
       "proposed_treatment": "Hash or pseudonymize.",
       "confidence": 1.0,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:39.445731+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:00.494067+00:00"
     },
     {
       "field": "imsi",
@@ -36,8 +36,8 @@
       "rationale": "SIM identifier directly links to a subscriber.",
       "proposed_treatment": "Hash or pseudonymize.",
       "confidence": 1.0,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:39.881461+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:01.330242+00:00"
     },
     {
       "field": "imei",
@@ -48,8 +48,8 @@
       "rationale": "Handset serial number directly identifies a device.",
       "proposed_treatment": "Hash or pseudonymize.",
       "confidence": 1.0,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:40.090333+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:01.997605+00:00"
     },
     {
       "field": "tp_dl_avg",
@@ -60,8 +60,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:40.264938+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:02.529463+00:00"
     },
     {
       "field": "tp_ul_avg",
@@ -72,8 +72,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:40.415009+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:02.885119+00:00"
     },
     {
       "field": "tp_dl_filtered_avg",
@@ -84,8 +84,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:40.579145+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:03.166975+00:00"
     },
     {
       "field": "cont_rtt_radio_avg",
@@ -96,8 +96,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:40.770390+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:03.435367+00:00"
     },
     {
       "field": "cont_rtt_internet_avg",
@@ -108,8 +108,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:40.954711+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:03.695952+00:00"
     },
     {
       "field": "initial_rtt_radio_avg",
@@ -120,8 +120,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:41.144086+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:03.943847+00:00"
     },
     {
       "field": "tcp_retrans_byte_ratio_downlink_avg",
@@ -132,8 +132,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:41.299293+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:04.185062+00:00"
     },
     {
       "field": "tcp_retrans_byte_ratio_uplink_avg",
@@ -144,8 +144,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.95,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:41.493445+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:04.450047+00:00"
     },
     {
       "field": "http_response_time_avg",
@@ -156,8 +156,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.9,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:41.663990+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:04.696375+00:00"
     },
     {
       "field": "http_sr_avg",
@@ -168,8 +168,8 @@
       "rationale": "Technical measurement with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.9,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:41.823533+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:05.469355+00:00"
     },
     {
       "field": "data_GB_sum",
@@ -180,8 +180,8 @@
       "rationale": "Aggregated volume metric with low re-identification risk.",
       "proposed_treatment": "Retain as-is.",
       "confidence": 0.9,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:41.978864+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:06.569954+00:00"
     },
     {
       "field": "im_video_GB_sum",
@@ -192,8 +192,8 @@
       "rationale": "Reveals usage of IM video, potentially sensitive behavior.",
       "proposed_treatment": "Generalize or aggregate.",
       "confidence": 0.85,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:42.128515+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:09.441282+00:00"
     },
     {
       "field": "im_audio_GB_sum",
@@ -204,8 +204,8 @@
       "rationale": "Reveals usage of IM audio, potentially sensitive behavior.",
       "proposed_treatment": "Generalize or aggregate.",
       "confidence": 0.85,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:42.297648+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:10.020864+00:00"
     },
     {
       "field": "tethering_data_GB_dl_sum",
@@ -216,8 +216,8 @@
       "rationale": "Indicates tethering usage, potentially sensitive behavior.",
       "proposed_treatment": "Generalize or aggregate.",
       "confidence": 0.8,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:42.453168+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:10.828911+00:00"
     },
     {
       "field": "radio_access_type",
@@ -228,8 +228,8 @@
       "rationale": "Combined with location or time can help re-identify users.",
       "proposed_treatment": "Generalize or suppress rare values.",
       "confidence": 0.8,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:42.617911+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:11.813293+00:00"
     },
     {
       "field": "province",
@@ -240,8 +240,8 @@
       "rationale": "Location data can help re-identify users when combined.",
       "proposed_treatment": "Generalize to larger regions.",
       "confidence": 0.9,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:42.773945+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:12.766974+00:00"
     },
     {
       "field": "application_category",
@@ -252,8 +252,8 @@
       "rationale": "Reveals user behavior and preferences, sensitive if linked.",
       "proposed_treatment": "Generalize or aggregate categories.",
       "confidence": 0.85,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:42.928159+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:13.722543+00:00"
     },
     {
       "field": "enb",
@@ -264,8 +264,8 @@
       "rationale": "Base-station ID combined with time/location can re-identify.",
       "proposed_treatment": "Generalize or suppress rare values.",
       "confidence": 0.85,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:43.077233+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:14.439332+00:00"
     },
     {
       "field": "tac",
@@ -276,8 +276,8 @@
       "rationale": "Device model can help re-identify when combined with other data.",
       "proposed_treatment": "Generalize to device type or suppress.",
       "confidence": 0.8,
-      "reviewer": "OR",
-      "timestamp": "2026-09-19T07:20:43.237019+00:00"
+      "reviewer": "AM",
+      "timestamp": "2026-09-19T07:24:14.859919+00:00"
     }
   ]
 }

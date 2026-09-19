@@ -1,0 +1,13 @@
+# Release parameters for the anonymisation step (M2).
+# k counts DISTINCT SUBSCRIBERS per QI group, never rows.
+
+k: 10                        # DISTINCT SUBSCRIBERS per QI group, not rows
+time_bucket_minutes: 15      # use the native window if it is coarser
+area_mode: enb_tokenised     # enb_tokenised | province
+min_subscribers_per_area: 10
+rare_category_min_subscribers: 10
+numeric_winsorise: [0.01, 0.99]
+numeric_round_sig_figs: 3
+volume_top_code_quantile: 0.99
+aggregate_min_subscribers_per_cell: 10
+dp_epsilon: null             # optional Laplace noise on aggregate counts

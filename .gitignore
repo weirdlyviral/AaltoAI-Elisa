@@ -6,6 +6,7 @@
 *.parquet
 secure/
 data/
+outputs/releases/
 
 # Environments
 .venv/
