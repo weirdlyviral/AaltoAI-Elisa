@@ -19,6 +19,7 @@ STORY_DIR = APP_DIR / "static" / "story"
 
 PAGE_FILES = [
     APP_DIR / "Home.py",
+    APP_DIR / "pages" / "3_Story.py",
     APP_DIR / "pages" / "1_Trade-off_Explorer.py",
     APP_DIR / "pages" / "2_AI_Analyst.py",
 ]

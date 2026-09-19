@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 import streamlit as st
 
@@ -63,6 +64,10 @@ def embedded_story(height: int = 900) -> None:
     static_dir = Path(__file__).resolve().parents[1] / "static"
     story_dir = static_dir / "story"
     body = (story_dir / "index.html").read_text().split("<body>", 1)[1].split("</body>", 1)[0]
+    # The standalone document loads these files with relative script tags. In
+    # Streamlit's srcdoc iframe those URLs point at the app route, so bundle
+    # the assets below and remove the duplicate external tags.
+    body = re.sub(r"<script\b[^>]*>.*?</script>", "", body, flags=re.S)
     tokens = (static_dir / "tokens.css").read_text()
     styles = (story_dir / "story.css").read_text().replace(
         '@import url("../vendor/fonts/fonts.css");', ""
