@@ -126,7 +126,7 @@ def test_session_is_optional_and_excluded_from_the_default_set():
 
 def test_identifier_columns_are_removed():
     prepared, log, config, _ = prepared_frame()
-    release, _ = anonymise.build_release(prepared, "record", config, log)
+    release, _, _ = anonymise.build_release(prepared, "record", config, log)
 
     for column in anonymise.IDENTIFIER_COLUMNS:
         assert column not in release.columns
@@ -137,7 +137,7 @@ def test_identifier_columns_are_removed():
 
 def test_release_passes_the_leak_guard(tmp_path: Path):
     prepared, log, config, _ = prepared_frame()
-    release, _ = anonymise.build_release(prepared, "record", config, log)
+    release, _, _ = anonymise.build_release(prepared, "record", config, log)
 
     target = safety.safe_write_df(release, tmp_path / "record.parquet")
 
@@ -256,7 +256,7 @@ def test_assert_release_safe_rejects_identifier_column():
 
 def test_session_key_appears_in_no_output_or_log(tmp_path: Path):
     prepared, log, config, _ = prepared_frame()
-    release, _ = anonymise.build_release(prepared, "session", config, log)
+    release, _, _ = anonymise.build_release(prepared, "session", config, log)
 
     assert "session_id" in release.columns
     assert anonymise.SUBSCRIBER not in release.columns
@@ -274,7 +274,7 @@ def test_session_key_appears_in_no_output_or_log(tmp_path: Path):
 
 def test_session_ids_are_stable_within_a_release():
     prepared, log, config, _ = prepared_frame()
-    release, _ = anonymise.build_release(prepared, "session", config, log)
+    release, _, _ = anonymise.build_release(prepared, "session", config, log)
 
     counts = release.groupby("session_id").size()
     assert counts.max() > 1, "session_id should link a subscriber's rows"
@@ -283,9 +283,9 @@ def test_session_ids_are_stable_within_a_release():
 def test_session_ids_differ_between_runs():
     """The HMAC key is ephemeral, so ids must not be reproducible."""
     prepared, log_a, config, _ = prepared_frame()
-    first, _ = anonymise.build_release(prepared, "session", config, log_a)
+    first, _, _ = anonymise.build_release(prepared, "session", config, log_a)
     prepared_b, log_b, config_b, _ = prepared_frame()
-    second, _ = anonymise.build_release(prepared_b, "session", config_b, log_b)
+    second, _, _ = anonymise.build_release(prepared_b, "session", config_b, log_b)
 
     assert set(first["session_id"]) != set(second["session_id"])
 
@@ -297,7 +297,7 @@ def test_session_ids_differ_between_runs():
 
 def test_suppression_and_escalation_counts_are_logged():
     prepared, log, config, _ = prepared_frame()
-    _, stats = anonymise.build_release(prepared, "record", config, log)
+    _, stats, _ = anonymise.build_release(prepared, "record", config, log)
 
     actions = {entry.action for entry in log.entries}
     assert any("escalated to province" in a for a in actions)
@@ -354,7 +354,7 @@ def test_volumes_are_top_coded():
 
 def test_aggregate_suppresses_thin_cells():
     prepared, log, config, _ = prepared_frame()
-    out, stats = anonymise.build_release(prepared, "aggregate", config, log)
+    out, stats, _ = anonymise.build_release(prepared, "aggregate", config, log)
 
     assert (out["n_subscribers"] >= config["aggregate_min_subscribers_per_cell"]).all()
     assert stats["cells_suppressed"] >= 1
@@ -364,22 +364,22 @@ def test_aggregate_suppresses_thin_cells():
 def test_aggregate_dp_records_epsilon_and_scale():
     prepared, log, _, _ = prepared_frame()
     config = base_config(dp_epsilon=0.5)
-    _, stats = anonymise.build_release(prepared, "aggregate", config, log)
+    _, stats, _ = anonymise.build_release(prepared, "aggregate", config, log)
 
     dp = stats["dp"]
     assert dp["applied"] is True
     assert dp["epsilon"] == 0.5
-    assert dp["noise_scale"] == 2.0
+    assert dp["noise_scale"] == 6.0
     assert dp["mechanism"] == "Laplace"
     assert dp["seed"] == safety.SEED
-    assert set(dp["noised_columns"]) == {"n_subscribers", "n_rows"}
+    assert set(dp["noised_columns"]) == {"n_subscribers"}
     assert dp["caveats"], "the sensitivity caveat must be recorded, not implied"
 
 
 def test_aggregate_without_epsilon_records_no_noise():
     prepared, log, _, _ = prepared_frame()
     config = base_config(dp_epsilon=None)
-    _, stats = anonymise.build_release(prepared, "aggregate", config, log)
+    _, stats, _ = anonymise.build_release(prepared, "aggregate", config, log)
 
     assert stats["dp"]["applied"] is False
     assert stats["dp"]["epsilon"] is None
@@ -388,7 +388,7 @@ def test_aggregate_without_epsilon_records_no_noise():
 def test_dp_noise_actually_perturbs_counts():
     prepared, log, _, _ = prepared_frame()
     cells, _ = anonymise.aggregate_cells(prepared, base_config(), log)
-    noisy, _ = anonymise.apply_dp_noise(cells, 0.5)
+    noisy, _ = anonymise.apply_dp_noise(cells, 0.5, 2.0)
 
     assert not cells["n_subscribers"].equals(noisy["n_subscribers"])
     assert (noisy["n_subscribers"] >= 0).all(), "counts must stay non-negative"
@@ -398,8 +398,8 @@ def test_dp_noise_is_deterministic_under_the_seed():
     prepared, log, _, _ = prepared_frame()
     cells, _ = anonymise.aggregate_cells(prepared, base_config(), log)
 
-    first, _ = anonymise.apply_dp_noise(cells, 1.0)
-    second, _ = anonymise.apply_dp_noise(cells, 1.0)
+    first, _ = anonymise.apply_dp_noise(cells, 1.0, 1.0)
+    second, _ = anonymise.apply_dp_noise(cells, 1.0, 1.0)
 
     assert first["n_subscribers"].equals(second["n_subscribers"])
 
@@ -408,8 +408,8 @@ def test_smaller_epsilon_means_more_noise():
     prepared, log, _, _ = prepared_frame()
     cells, _ = anonymise.aggregate_cells(prepared, base_config(), log)
 
-    loose, _ = anonymise.apply_dp_noise(cells, 2.0)
-    tight, _ = anonymise.apply_dp_noise(cells, 0.25)
+    loose, _ = anonymise.apply_dp_noise(cells, 2.0, 0.5)
+    tight, _ = anonymise.apply_dp_noise(cells, 0.25, 4.0)
 
     loose_err = anonymise.count_relative_error(cells, loose)["median_rel_error_n_subscribers"]
     tight_err = anonymise.count_relative_error(cells, tight)["median_rel_error_n_subscribers"]
@@ -476,7 +476,7 @@ def test_no_secondary_suppression_when_nothing_was_primary_suppressed():
 
 def test_aggregate_publishes_one_granularity_only():
     prepared, log, config, _ = prepared_frame()
-    out, stats = anonymise.build_release(prepared, "aggregate", config, log)
+    out, stats, _ = anonymise.build_release(prepared, "aggregate", config, log)
 
     assert stats["single_granularity_only"] is True
     assert stats["granularity"] == [c for c in anonymise.AGGREGATE_KEYS if c in out.columns]
@@ -515,7 +515,7 @@ def test_aggregate_sweep_covers_every_epsilon():
             "dp_epsilon",
             "pct_cells_suppressed",
             "median_rel_error_n_subscribers",
-            "median_rel_error_n_rows",
+            
             "mean_rel_error_n_subscribers",
         }
     # Suppression is decided on true counts, so it cannot vary with epsilon.

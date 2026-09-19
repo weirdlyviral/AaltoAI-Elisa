@@ -1,0 +1,329 @@
+{
+  "generated": "2026-09-19T10:01:41.106306+00:00",
+  "seed": 42,
+  "threat_model": {
+    "recipient": "Elisa product team. No raw-data access, no hashing keys, no enb->area mapping, no auxiliary identity data (relative approach, EDPS v SRB).",
+    "worst_case": "Knows some true (enb, time) points about a target, public enb->province geography, and - for the differencing test - the true per-slice totals."
+  },
+  "attacks": [
+    {
+      "id": "A1",
+      "name": "Row uniqueness",
+      "criterion": "singling_out",
+      "attacker_knowledge": "QI values of a target (same under both models)",
+      "baseline_raw": "36.31% of subscribers own at least one unique row (QI set D)",
+      "record": {
+        "pct_rows_in_groups_of_1": 0.0,
+        "pct_groups_below_k": 0.0,
+        "min_subscribers_per_group": 10,
+        "expected_identification_probability": 0.0249072,
+        "n_groups": 27291
+      },
+      "interpretation": "k-anonymity on distinct subscribers removes singling out by QI: the expected chance of picking the target's row is 1 in 40."
+    },
+    {
+      "id": "A2",
+      "name": "Trajectory attack",
+      "criterion": "linkability",
+      "attacker_knowledge": "p known (location, time) points for a target, p = 1..4",
+      "baseline_raw": "4 known (enb, hour) points uniquely identify 99.6% of eligible subscribers",
+      "record": {
+        "structural_defence": "The record release carries no subscriber key, so an attacker cannot group a target's rows together. The figures below assume the strictly stronger attacker who somehow can - they bound the risk.",
+        "worst_case": {
+          "attacker_model": "worst_case",
+          "coordinates": [
+            "area",
+            "time_bucket"
+          ],
+          "results": [
+            {
+              "p": 1,
+              "n_eligible": 199187,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 2811.0,
+              "median_candidates_all_points": 2811.0,
+              "pct_unique_if_rows_were_linkable": 0.0,
+              "probability_of_picking_target_row": 0.0022015
+            },
+            {
+              "p": 2,
+              "n_eligible": 194648,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 644.0,
+              "median_candidates_all_points": 12.0,
+              "pct_unique_if_rows_were_linkable": 13.7,
+              "probability_of_picking_target_row": 0.243602
+            },
+            {
+              "p": 3,
+              "n_eligible": 181995,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 395.0,
+              "median_candidates_all_points": 1.0,
+              "pct_unique_if_rows_were_linkable": 74.8,
+              "probability_of_picking_target_row": 0.839406
+            },
+            {
+              "p": 4,
+              "n_eligible": 158636,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 286.0,
+              "median_candidates_all_points": 1.0,
+              "pct_unique_if_rows_were_linkable": 99.3,
+              "probability_of_picking_target_row": 0.9965
+            }
+          ]
+        },
+        "realistic": {
+          "attacker_model": "realistic",
+          "coordinates": [
+            "province",
+            "time_bucket"
+          ],
+          "results": [
+            {
+              "p": 1,
+              "n_eligible": 199187,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 31869.0,
+              "median_candidates_all_points": 31869.0,
+              "pct_unique_if_rows_were_linkable": 0.0,
+              "probability_of_picking_target_row": 7.90078e-05
+            },
+            {
+              "p": 2,
+              "n_eligible": 192865,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 17797.0,
+              "median_candidates_all_points": 4442.0,
+              "pct_unique_if_rows_were_linkable": 0.0,
+              "probability_of_picking_target_row": 0.00150242
+            },
+            {
+              "p": 3,
+              "n_eligible": 173144,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 9643.0,
+              "median_candidates_all_points": 578.0,
+              "pct_unique_if_rows_were_linkable": 0.1,
+              "probability_of_picking_target_row": 0.0114515
+            },
+            {
+              "p": 4,
+              "n_eligible": 137516,
+              "n_sampled": 1000,
+              "median_candidates_per_point": 6846.0,
+              "median_candidates_all_points": 76.5,
+              "pct_unique_if_rows_were_linkable": 3.8,
+              "probability_of_picking_target_row": 0.0918478
+            }
+          ]
+        }
+      },
+      "interpretation": "Rows are not linkable, so the raw 99.6% collapses. Even granting an attacker the ability to link, 4 known points leave a median of 1.0 candidate subscribers and single out 99.3% of targets."
+    },
+    {
+      "id": "A3",
+      "name": "Homogeneity (l-diversity)",
+      "criterion": "inference",
+      "attacker_knowledge": "QI values of a target (same under both models)",
+      "baseline_raw": "Not applicable: raw rows are individually identifying",
+      "record": {
+        "n_groups": 27291,
+        "attributes": {
+          "tethering": {
+            "overall_share_true": 0.157818,
+            "pct_groups_homogeneous": 10.967,
+            "pct_groups_homogeneous_on_true": 0.0,
+            "pct_group_memberships_in_homogeneous_groups": 4.44268,
+            "pct_group_memberships_in_homogeneous_true_groups": 0.0,
+            "pct_subscribers_with_attribute_disclosed": 0.0,
+            "l_min": 1,
+            "l_median": 2.0
+          },
+          "video": {
+            "overall_share_true": 0.00311825,
+            "pct_groups_homogeneous": 94.1702,
+            "pct_groups_homogeneous_on_true": 0.0,
+            "pct_group_memberships_in_homogeneous_groups": 89.5006,
+            "pct_group_memberships_in_homogeneous_true_groups": 0.0,
+            "pct_subscribers_with_attribute_disclosed": 0.0,
+            "l_min": 1,
+            "l_median": 1.0
+          },
+          "heavy_user": {
+            "overall_share_true": 0.0500261,
+            "pct_groups_homogeneous": 69.0594,
+            "pct_groups_homogeneous_on_true": 0.0,
+            "pct_group_memberships_in_homogeneous_groups": 53.9113,
+            "pct_group_memberships_in_homogeneous_true_groups": 0.0,
+            "pct_subscribers_with_attribute_disclosed": 0.0,
+            "l_min": 1,
+            "l_median": 1.0
+          }
+        },
+        "note": "application_category is excluded: it is a quasi-identifier, so every group holds one value by construction."
+      },
+      "interpretation": "No group is homogeneous on the revealing (True) value for any of the three attributes, so k-anonymity is not leaking a positive trait here. Homogeneous groups are common but they are homogeneous on False (e.g. 94.1702% for 'video'), which discloses only that a target did not do something."
+    },
+    {
+      "id": "A4",
+      "name": "Outliers",
+      "criterion": "singling_out",
+      "attacker_knowledge": "QI values plus the target's approximate data volume",
+      "baseline_raw": "1.00% of subscribers above the volume p99; 0.019% unique at 0.1 GB rounding",
+      "record": {
+        "heavy_user_threshold_raw_p95": 0.0151451,
+        "n_heavy_rows": 54819,
+        "pct_heavy_rows": 5.00261,
+        "top_code_caps": {
+          "data_GB_sum": {
+            "cap": 0.189,
+            "pct_rows_at_cap": 1.0062
+          },
+          "im_video_GB_sum": {
+            "cap": 0.72,
+            "pct_rows_at_cap": 0.00319399
+          },
+          "im_audio_GB_sum": {
+            "cap": 0.0974,
+            "pct_rows_at_cap": 0.0112246
+          },
+          "tethering_data_GB_dl_sum": {
+            "cap": 0.794,
+            "pct_rows_at_cap": 0.158422
+          }
+        },
+        "qi_plus_volume": {
+          "pct_rows_below_k": 2.01176,
+          "median_subscribers_sharing_combination": 71.0,
+          "heavy_rows_in_groups_below_k": 16850
+        }
+      },
+      "interpretation": "Top-coding collapses the extreme tail, but adding a 0.1 GB volume bucket to the QI still puts 2.01176% of rows below k, and leaves 16850 heavy-user rows there. Volume is not part of the k-anonymity QI set, so this is residual risk."
+    },
+    {
+      "id": "A5",
+      "name": "Differencing on aggregates",
+      "criterion": "singling_out",
+      "attacker_knowledge": "worst_case: the true n_subscribers total per (time_bucket, province) slice",
+      "baseline_raw": "Not applicable: raw has no suppression to undo",
+      "aggregate": {
+        "tolerance_subscribers": 2,
+        "realistic": "Not attemptable: the recipient does not hold true slice totals.",
+        "worst_case_grid": [
+          {
+            "dp_epsilon": 0.5,
+            "secondary_suppression": true,
+            "suppressed_cells": 991,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          },
+          {
+            "dp_epsilon": 0.5,
+            "secondary_suppression": false,
+            "suppressed_cells": 911,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          },
+          {
+            "dp_epsilon": 1.0,
+            "secondary_suppression": true,
+            "suppressed_cells": 981,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          },
+          {
+            "dp_epsilon": 1.0,
+            "secondary_suppression": false,
+            "suppressed_cells": 901,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          },
+          {
+            "dp_epsilon": 2.0,
+            "secondary_suppression": true,
+            "suppressed_cells": 1004,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          },
+          {
+            "dp_epsilon": 2.0,
+            "secondary_suppression": false,
+            "suppressed_cells": 924,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          },
+          {
+            "dp_epsilon": "none",
+            "secondary_suppression": true,
+            "suppressed_cells": 1111,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          },
+          {
+            "dp_epsilon": "none",
+            "secondary_suppression": false,
+            "suppressed_cells": 1033,
+            "slices_losing_exactly_one_cell": 0,
+            "cells_recovered_within_tolerance": 0,
+            "pct_recovered": 0.0
+          }
+        ]
+      },
+      "interpretation": "No slice in this extract ever loses exactly one cell, so the subtraction never isolates a single suppressed value: recovery is 0.0% even undefended (no noise, no secondary suppression). The attack is blocked by the shape of the data here, NOT demonstrably by secondary suppression - which costs 80 extra cells and remains untested on this extract. The synthetic test in tests/test_evaluate.py shows the defence works when a lone cell is suppressed."
+    },
+    {
+      "id": "A6",
+      "name": "Membership inference on aggregates",
+      "criterion": "inference",
+      "attacker_knowledge": "worst_case: every other subscriber's data and the target's true cells - the standard differential-privacy adversary",
+      "baseline_raw": "100% - raw rows carry the subscriber key outright",
+      "aggregate": {
+        "n_targets": 200,
+        "trials_per_target": 100,
+        "method": "For each target the attacker sees one noisy release drawn at random from the world with or without them, and applies a Laplace likelihood-ratio test over the target's cells. 50% = random guessing.",
+        "scope_note": "The test operates on the noised counts, which is exactly what the DP guarantee covers. Suppression is not simulated per target, so this measures the count channel only.",
+        "realistic": "Not attemptable: the recipient does not hold the other subscribers' data.",
+        "worst_case_grid": [
+          {
+            "dp_epsilon": 0.5,
+            "noise_scale": 22.0,
+            "attacker_accuracy_pct": 52.07,
+            "attacker_advantage_pct": 4.14,
+            "theoretical_bound_pct": 62.2459
+          },
+          {
+            "dp_epsilon": 1.0,
+            "noise_scale": 11.0,
+            "attacker_accuracy_pct": 54.005,
+            "attacker_advantage_pct": 8.01,
+            "theoretical_bound_pct": 73.1059
+          },
+          {
+            "dp_epsilon": 2.0,
+            "noise_scale": 5.5,
+            "attacker_accuracy_pct": 57.915,
+            "attacker_advantage_pct": 15.83,
+            "theoretical_bound_pct": 88.0797
+          },
+          {
+            "dp_epsilon": "none",
+            "noise_scale": null,
+            "attacker_accuracy_pct": 100.0,
+            "attacker_advantage_pct": 100.0,
+            "theoretical_bound_pct": 100.0
+          }
+        ]
+      },
+      "interpretation": "Without noise the attacker is 100.0% accurate. At the deployed epsilon the attack falls to 54.005% against a theoretical ceiling of 73.1059%, i.e. an advantage of 8.01 points over guessing."
+    }
+  ]
+}
