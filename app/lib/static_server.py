@@ -14,13 +14,15 @@ from __future__ import annotations
 
 import functools
 import http.server
+import os
 import threading
 import urllib.request
 from pathlib import Path
 
 STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 HOST = "127.0.0.1"
-PORT = 8765
+# AAS_STATIC_PORT lets a second checkout run beside the first one.
+PORT = int(os.environ.get("AAS_STATIC_PORT", "8765"))
 
 _lock = threading.Lock()
 _started = False

@@ -423,10 +423,12 @@
     );
   }
 
-  function cssVar(name, fallback) {
+  // Colours come from ../tokens.css; there is deliberately no hex fallback here.
+  function cssVar(name) {
     var value = getComputedStyle(document.documentElement).getPropertyValue(name);
     value = value && value.trim();
-    return value || fallback;
+    if (!value) console.error("missing colour token " + name + " (is ../tokens.css loaded?)");
+    return value || "currentColor";
   }
 
   // ------------------------------------------------------------ scene data
@@ -2403,13 +2405,13 @@
   function boot(data) {
     var colors = {
       net: {
-        "4G": cssVar("--net-4g", "#56b4e9"),
-        "5G": cssVar("--net-5g", "#e69f00"),
-        "2G": cssVar("--net-2g", "#cc79a7"),
+        "4G": cssVar("--net-4g"),
+        "5G": cssVar("--net-5g"),
+        "2G": cssVar("--net-2g"),
       },
-      ringDashed: cssVar("--ring-dashed", "#8fa0ba"),
-      ringRisk: cssVar("--ring-risk", "#ff6b6b"),
-      ringSafe: cssVar("--ring-safe", "#3ddc97"),
+      ringDashed: cssVar("--ring-dashed"),
+      ringRisk: cssVar("--ring-risk"),
+      ringSafe: cssVar("--ring-safe"),
     };
 
     buildStepSections(data);

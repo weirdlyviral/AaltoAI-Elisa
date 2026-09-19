@@ -1,0 +1,126 @@
+/* Single source of truth for colour — the story, Home and every Streamlit page
+   read this file. Nothing else in app/ may hard-code a colour.
+
+   Two layers:
+   1. Primitives: Elisa Design System colours, copied verbatim (names and hex)
+      from https://storybook.elisa.fi/?path=/docs/colors--documentation
+      (Foundations > Colors > Primitive colors).
+   2. Roles: what each colour is FOR in this prototype. Change a role by
+      pointing it at a different primitive, here and only here.
+
+   Hackathon prototype — not an Elisa product. The palette is used for visual
+   consistency only; no Elisa logo or brand asset is included.
+
+   .streamlit/config.toml cannot read CSS, so it repeats four role values;
+   tests/test_app.py fails if they drift from this file. */
+
+:root {
+  /* ---------- 1. Elisa primitives (verbatim) ---------- */
+
+  /* core */
+  --eds-color-brand-blue: #00239d;
+  --eds-color-dark-blue: #101221;
+  --eds-color-black: #000000;
+  --eds-color-off-black: #101221;
+  --eds-color-white: #ffffff;
+  --eds-color-off-white: #fdfdfd;
+
+  /* grey */
+  --eds-color-grey-100: #fafafb;
+  --eds-color-grey-200: #f6f6f7;
+  --eds-color-grey-250: #efeff1;
+  --eds-color-grey-300: #e8e8ea;
+  --eds-color-grey-400: #d2d2d6;
+  --eds-color-grey-500: #8d8d95;
+  --eds-color-grey-600: #70707a;
+  --eds-color-grey-700: #40404a;
+  --eds-color-grey-750: #313138;
+  --eds-color-grey-800: #212226;
+
+  /* blue */
+  --eds-color-blue-100: #f0f7ff;
+  --eds-color-blue-200: #deedff;
+  --eds-color-blue-300: #bbdaff;
+  --eds-color-blue-400: #96c5ff;
+  --eds-color-blue-500: #2b81f8;
+  --eds-color-blue-600: #005fed;
+  --eds-color-blue-700: #064aac;
+  --eds-color-blue-800: #171c43;
+  --eds-color-blue-850: #272d41;
+  --eds-color-blue-900: #1a1c33;
+  --eds-color-blue-950: #121525;
+
+  /* red */
+  --eds-color-red-100: #fff5f7;
+  --eds-color-red-200: #ffd3dd;
+  --eds-color-red-300: #ffb9b5;
+  --eds-color-red-400: #fc466d;
+  --eds-color-red-500: #d63b5c;
+  --eds-color-red-600: #e0022a;
+  --eds-color-red-700: #bc0829;
+  --eds-color-red-800: #401027;
+
+  /* green */
+  --eds-color-green-100: #edf7f4;
+  --eds-color-green-200: #a8f0e3;
+  --eds-color-green-300: #74e7d2;
+  --eds-color-green-400: #32dbbc;
+  --eds-color-green-500: #28ae81;
+  --eds-color-green-600: #008253;
+  --eds-color-green-700: #094732;
+  --eds-color-green-800: #0d281e;
+
+  /* yellow */
+  --eds-color-yellow-100: #fffaf2;
+  --eds-color-yellow-200: #ffe3ba;
+  --eds-color-yellow-300: #ffce85;
+  --eds-color-yellow-400: #ffaf38;
+  --eds-color-yellow-500: #ff8800;
+  --eds-color-yellow-600: #ff7613;
+  --eds-color-yellow-700: #6c3a11;
+  --eds-color-yellow-800: #27221a;
+
+  /* ---------- 2. Roles (light theme, as in Elisa's own Storybook) ----------
+     Contrast is WCAG 2.x against --bg (#fdfdfd) and --panel (#f0f7ff), the two
+     grounds text and marks sit on; the pair is quoted as "bg / panel".      */
+
+  --bg: var(--eds-color-off-white); /* page ground */
+  --panel: var(--eds-color-blue-100); /* surface: cards, graphic panel, sidebar */
+  --panel-2: var(--eds-color-blue-200); /* raised surface: chips, tracks */
+
+  --fg: var(--eds-color-dark-blue); /* text 18.3 / 17.2 */
+  --fg-dim: var(--eds-color-grey-700); /* secondary text 10.1 / 9.5 */
+  --muted: var(--eds-color-grey-600); /* tertiary text 4.8 / 4.5; not for use on --panel-2 (4.1) */
+
+  --accent: var(--eds-color-brand-blue); /* links, current step, bars 12.0 / 11.3 */
+  --on-accent: var(--eds-color-white); /* ink on --accent and on the strong status colours */
+
+  /* fill = network type. Bright blue / purple / dark grey: separated in hue
+     and lightness so they survive deuteranopia, protanopia and tritanopia. */
+  --net-4g: var(--eds-color-blue-600); /* palette, 5.4 / 5.0 */
+  --net-5g: #7a3e9d; /* outside the palette (it has no purple), 6.9 / 6.5 */
+  --net-2g: var(--eds-color-grey-700); /* palette, 10.1 / 9.5 */
+
+  /* ring / text / line = privacy status (the strong colours) */
+  --ring-safe: var(--eds-color-green-600); /* pass 4.8 / 4.5 */
+  --ring-risk: var(--eds-color-red-700); /* fail 6.4 / 6.1 */
+  --residual: #ad5600; /* residual; outside the palette, see below, 4.9 / 4.5 */
+  --ring-dashed: var(--eds-color-grey-600); /* "identifiers removed" 4.8 / 4.5 */
+
+  /* Why --residual and --net-5g leave the palette: on a light ground the
+     palette's yellows are too pale to read (yellow-600 is 2.8:1), and its one
+     dark yellow (700, brown) is only 12.6 apart from red-700 under colour-blind
+     simulation. #ad5600 is a darker Okabe-Ito orange: 15+ apart from every
+     other status and network colour. */
+
+  /* tint = solid chip backgrounds, always carrying --on-tint text */
+  --pass-fill: var(--eds-color-green-300);
+  --fail-fill: var(--eds-color-red-400);
+  --residual-fill: var(--eds-color-yellow-400);
+  --on-tint: var(--eds-color-dark-blue); /* 10.6 or better on all three */
+
+  /* translucent derivatives — never a second hard-coded colour */
+  --border: color-mix(in srgb, var(--fg) 18%, transparent);
+  --border-soft: color-mix(in srgb, var(--fg) 10%, transparent);
+  --scrim: color-mix(in srgb, var(--bg) 94%, transparent);
+}
