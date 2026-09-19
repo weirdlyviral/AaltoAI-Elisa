@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-19T10:01:41.106306+00:00",
+  "generated": "2026-09-19T14:42:59.637596+00:00",
   "seed": 42,
   "threat_model": {
     "recipient": "Elisa product team. No raw-data access, no hashing keys, no enb->area mapping, no auxiliary identity data (relative approach, EDPS v SRB).",

@@ -40,6 +40,20 @@ Optional: `DATASET_FILE` overrides the default raw filename inside `SECURE_DIR`.
 .venv/bin/python -m pytest tests/
 ```
 
+## Prototype app (M6)
+
+A Streamlit "Anonymity Assessment Studio" reads only the published outputs —
+never the raw dataset. Run it with `SECURE_DIR` unset (it doesn't need it):
+
+```bash
+.venv/bin/streamlit run app/Home.py
+```
+
+Pages: **Home** (pipeline walkthrough), **Trade-off Explorer** (k / time
+bucket / area mode / epsilon grid), **AI Analyst**, **AI Red Team** (both
+stretch goals, M6.3). See `app/lib/data.py` for the full read-only data
+contract and `docs/specs/m6.md` / `docs/specs/m6_scaffold.md` for the spec.
+
 ## Safety model
 
 [`src/safety.py`](src/safety.py) is the only component that touches raw data or
@@ -84,4 +98,5 @@ config/fields.yaml    reviewed class and treatment per field
 docs/                 dataset description
 outputs/              generated artefacts (all leak-guard verified)
 tests/                safety-layer tests (synthetic data only)
+app/                  M6 prototype: Streamlit app, recipient-only (see app/lib/data.py)
 ```

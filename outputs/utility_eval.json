@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-19T10:01:25.907630+00:00",
+  "generated": "2026-09-19T14:40:06.731194+00:00",
   "seed": 42,
   "inputs": {
     "aggregate_release": "outputs/releases/aggregate.parquet",
@@ -266,17 +266,29 @@
     },
     "bottom_cells_all": {
       "scope": "all cells",
-      "n_cells": 2772,
-      "bottom_n": 10,
-      "overlap": 10,
-      "jaccard": 1.0
+      "n_cells": 2680,
+      "quantile": 0.1,
+      "n_bottom_released": 271,
+      "n_bottom_raw": 268,
+      "intersection": 268,
+      "union": 271,
+      "jaccard": 0.98893,
+      "tie_at_min_released": 96,
+      "tie_at_min_raw": 91,
+      "tie_is_winsorise_floor": false
     },
     "bottom_cells_5g": {
       "scope": "5G cells only",
-      "n_cells": 1212,
-      "bottom_n": 10,
-      "overlap": 9,
-      "jaccard": 0.818182
+      "n_cells": 1182,
+      "quantile": 0.1,
+      "n_bottom_released": 119,
+      "n_bottom_raw": 119,
+      "intersection": 119,
+      "union": 119,
+      "jaccard": 1.0,
+      "tie_at_min_released": 1,
+      "tie_at_min_raw": 1,
+      "tie_is_winsorise_floor": false
     }
   },
   "U4": {

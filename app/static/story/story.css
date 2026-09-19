@@ -1,0 +1,966 @@
+@import url("../vendor/fonts/fonts.css");
+
+/* Single dark theme, shared with the Streamlit app (app/assets/styles.css). */
+:root {
+  --bg: #0b1220;
+  --panel: #121b2c;
+  --panel-2: #172335;
+  --fg: #e8eefb;
+  --fg-dim: #ccd8ea;
+  --muted: #9cadc6;
+  --border: rgba(232, 238, 251, 0.14);
+  --border-soft: rgba(232, 238, 251, 0.12);
+
+  /* fill = network type (Okabe-Ito derived, colour-blind safe) */
+  --net-4g: #56b4e9;
+  --net-5g: #e69f00;
+  --net-2g: #cc79a7;
+
+  /* ring = privacy status */
+  --ring-dashed: #8fa0ba;
+  --ring-risk: #ff6b6b;
+  --ring-safe: #3ddc97;
+
+  --accent: #6ea8fe;
+
+  /* Set from story.js: one viewBox unit expressed in rendered pixels, so the
+     px numbers on SVG labels below are what a projector actually shows. */
+  --u: 1px;
+  --chrome-scale: 1;
+
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- fixed chrome ---------- */
+
+.mock-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  text-align: center;
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+  padding: 0.45rem 5rem;
+  background: rgba(11, 18, 32, 0.94);
+  color: var(--muted);
+  border-bottom: 1px solid var(--border-soft);
+  backdrop-filter: blur(6px);
+}
+
+.story-close {
+  position: fixed;
+  top: 0.4rem;
+  right: 0.9rem;
+  z-index: 61;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.15rem 0.4rem;
+}
+
+.story-close:hover {
+  color: var(--fg);
+}
+
+/* ---------- layout: text 40% left, graphic 60% right ---------- */
+
+.story-layout {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2.1rem;
+  gap: 0;
+}
+
+.text-pane {
+  width: 40%;
+  padding: 18vh 2.6rem 45vh 3.2rem;
+}
+
+.graphic-pane {
+  width: 60%;
+  position: sticky;
+  top: 2.1rem;
+  height: calc(100vh - 2.1rem);
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 1.6rem 1.2rem 0.4rem;
+}
+
+/* ---------- pipeline progress bar ---------- */
+
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+  flex: 0 0 auto;
+}
+
+.pipeline-stage {
+  font-size: calc(14px * var(--chrome-scale));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.24rem 0.6rem;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: color 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+}
+
+.pipeline-stage.is-done {
+  color: var(--fg-dim);
+}
+
+.pipeline-stage.is-current {
+  color: #06121f;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.pipeline-sep {
+  color: var(--border);
+  font-size: 0.7rem;
+}
+
+/* ---------- graphic panel ---------- */
+
+.graphic-panel {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+#story-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- legend ---------- */
+
+/* A strip above the graphic rather than an overlay inside it: the plot's
+   own row/column labels live in the top-left corner. */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  flex: 0 0 auto;
+  margin-bottom: 0.55rem;
+  font-size: calc(14px * var(--chrome-scale));
+  line-height: 1.4;
+  color: var(--fg-dim);
+}
+
+.legend-title {
+  font-size: calc(12px * var(--chrome-scale));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0.1rem 0 0;
+}
+
+.legend-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  white-space: nowrap;
+}
+
+.legend-swatch {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+}
+
+/* ---------- title card over the graphic ---------- */
+
+.title-card {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.5rem;
+  background: linear-gradient(180deg, rgba(11, 18, 32, 0.93), rgba(11, 18, 32, 0.82));
+  transition: opacity 0.7s ease, visibility 0.7s ease;
+}
+
+.title-card h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 2rem;
+  line-height: 1.22;
+  margin: 0 0 0.8rem 0;
+  max-width: 20ch;
+}
+
+.title-card p {
+  margin: 0;
+  color: var(--fg-dim);
+  font-size: 0.92rem;
+  max-width: 42ch;
+  line-height: 1.55;
+}
+
+.title-card .scroll-hint {
+  margin-top: 1.6rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title-card.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ---------- SVG element styling ---------- */
+
+.tower-mark {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+}
+
+.tower-label {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 14);
+  font-family: var(--sans);
+  letter-spacing: 0.04em;
+}
+
+/* Opacity is animated per-step from story.js; a CSS opacity here would
+   override the presentation attribute and the tags would never drop. */
+.id-tag {
+  fill: var(--muted);
+}
+
+.trail-leg {
+  fill: none;
+  stroke: var(--ring-risk);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.trail-badge circle {
+  fill: var(--ring-risk);
+}
+
+.trail-badge text {
+  fill: #0b1220;
+  font-size: calc(var(--u) * 13);
+  font-weight: 700;
+  font-family: var(--sans);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.hull-shape {
+  fill: rgba(110, 168, 254, 0.07);
+  stroke: rgba(110, 168, 254, 0.28);
+  stroke-width: 1;
+}
+
+.axis-label {
+  fill: var(--fg-dim);
+  font-size: calc(var(--u) * 14);
+  font-family: var(--sans);
+}
+
+.axis-title {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 14);
+  font-family: var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.grid-line {
+  stroke: var(--border-soft);
+  stroke-width: 1;
+}
+
+.annotation-line {
+  stroke: var(--fg-dim);
+  stroke-width: 1;
+  fill: none;
+  opacity: 0.6;
+}
+
+/* ---------- counts, bars, panels ---------- */
+
+.count-badge {
+  fill: var(--fg-dim);
+  font-size: calc(var(--u) * 16);
+  font-family: var(--sans);
+  font-weight: 600;
+}
+
+.count-badge.is-small {
+  fill: var(--ring-risk);
+}
+
+.cell-bar {
+  fill: var(--accent);
+}
+
+.noise-band {
+  fill: var(--accent);
+  opacity: 0.18;
+}
+
+.attack-box {
+  fill: var(--panel-2);
+  stroke: var(--border-soft);
+  stroke-width: 1;
+}
+
+.attack-box.is-lit {
+  stroke: var(--border);
+}
+
+.attack-id {
+  fill: var(--accent);
+  font-size: calc(var(--u) * 16);
+  font-weight: 700;
+  font-family: var(--sans);
+}
+
+.attack-name {
+  fill: var(--fg);
+  font-size: calc(var(--u) * 17);
+  font-weight: 600;
+  font-family: var(--serif);
+}
+
+.attack-measured {
+  fill: var(--fg-dim);
+  font-size: calc(var(--u) * 14);
+  font-family: var(--sans);
+}
+
+.attack-verdict,
+.score-chip-text {
+  fill: #06121f;
+  font-size: calc(var(--u) * 13);
+  font-weight: 700;
+  font-family: var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.attack-verdict-chip.is-pass,
+.score-chip.is-pass {
+  fill: var(--ring-safe);
+}
+
+.attack-verdict-chip.is-residual,
+.score-chip.is-residual {
+  fill: var(--net-5g);
+}
+
+.attack-verdict-chip.is-fail,
+.score-chip.is-fail {
+  fill: var(--ring-risk);
+}
+
+.score-header {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 13);
+  font-family: var(--sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.score-rule {
+  stroke: var(--border-soft);
+  stroke-width: 1;
+}
+
+.score-name {
+  fill: var(--fg);
+  font-size: calc(var(--u) * 17);
+  font-weight: 600;
+  font-family: var(--serif);
+}
+
+.score-why {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 13);
+  font-family: var(--sans);
+}
+
+.utility-label {
+  fill: var(--fg-dim);
+  font-size: calc(var(--u) * 15);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.utility-track {
+  fill: var(--panel-2);
+}
+
+.utility-bar {
+  fill: var(--ring-safe);
+  opacity: 0.85;
+}
+
+.utility-value {
+  fill: var(--fg);
+  font-size: calc(var(--u) * 15);
+  font-weight: 600;
+  font-family: var(--sans);
+}
+
+.utility-target line {
+  stroke: var(--net-5g);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 3;
+}
+
+.utility-target text {
+  fill: var(--net-5g);
+  font-size: calc(var(--u) * 13);
+  font-family: var(--sans);
+}
+
+.annotation-plate {
+  fill: rgba(11, 18, 32, 0.88);
+  stroke: var(--border-soft);
+  stroke-width: 1;
+}
+
+.annotation-text {
+  fill: var(--fg);
+  font-size: calc(var(--u) * 16);
+  font-family: var(--sans);
+}
+
+.annotation-text.is-muted {
+  fill: var(--fg-dim);
+}
+
+.counter-box text.counter-value {
+  fill: var(--ring-risk);
+  font-size: calc(var(--u) * 30);
+  font-weight: 700;
+  font-family: var(--sans);
+}
+
+.counter-box text.counter-label {
+  fill: var(--fg-dim);
+  font-size: calc(var(--u) * 14);
+  font-family: var(--sans);
+}
+
+/* ---------- tooltip ---------- */
+
+.dot-tooltip {
+  position: fixed;
+  z-index: 70;
+  pointer-events: none;
+  background: rgba(8, 14, 25, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--fg);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.dot-tooltip.is-visible {
+  opacity: 1;
+}
+
+.dot-tooltip .tip-flag {
+  display: block;
+  color: var(--muted);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 0.15rem;
+}
+
+/* ---------- step cards ---------- */
+
+.step {
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+}
+
+.step-inner {
+  width: 100%;
+  opacity: 0.35;
+  transition: opacity 0.4s ease;
+}
+
+.step.is-active .step-inner {
+  opacity: 1;
+}
+
+.step-chapter {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.55rem;
+}
+
+.step-headline {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.95rem;
+  line-height: 1.2;
+  margin: 0 0 0.9rem 0;
+  letter-spacing: -0.01em;
+}
+
+.step-body {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.68;
+  color: var(--fg-dim);
+}
+
+.step-limits {
+  margin: 1rem 0 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-limits li {
+  position: relative;
+  padding-left: 1.1rem;
+  margin-bottom: 0.7rem;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+}
+
+.step-limits li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--ring-risk);
+}
+
+.step-stat {
+  margin-top: 1.3rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.step-stat-value {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 2.1rem;
+  line-height: 1;
+  color: var(--fg);
+}
+
+.step-stat-label {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.step-lens {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--fg-dim);
+  border-left: 2px solid var(--accent);
+  padding-left: 0.7rem;
+}
+
+.step-chip {
+  display: inline-block;
+  margin-top: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+}
+
+.step-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.step-button {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.6rem 1.1rem;
+  border-radius: 9px;
+  border: 1px solid var(--accent);
+  color: #06121f;
+  background: var(--accent);
+}
+
+.step-button.is-secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+.step-spacer {
+  height: 6vh;
+}
+
+.story-error {
+  padding: 2.5rem;
+  max-width: 480px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ring-risk);
+  font-family: var(--sans);
+}
+
+/* ---------- mobile: graphic sticky on top, text below ---------- */
+
+@media (max-width: 900px) {
+  .story-layout {
+    flex-direction: column-reverse;
+    padding-top: 3.1rem;
+  }
+
+  .graphic-pane {
+    width: 100%;
+    position: sticky;
+    top: 3.1rem;
+    height: 34vh;
+    padding: 0.35rem 0.6rem 0.5rem 0.6rem;
+    background: var(--bg);
+    z-index: 20;
+  }
+
+  .text-pane {
+    width: 100%;
+    padding: 0.9rem 1.1rem 38vh 1.1rem;
+  }
+
+  .step {
+    min-height: 62vh;
+    align-items: flex-end;
+  }
+
+  /* Long cards would otherwise start under the sticky graphic. */
+  .step-inner {
+    max-height: 62vh;
+    overflow-y: auto;
+  }
+
+  .step-chapter {
+    margin-bottom: 0.35rem;
+  }
+
+  .step-headline {
+    font-size: 1.42rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .step-body {
+    font-size: 15px;
+    line-height: 1.52;
+  }
+
+  .step-stat {
+    margin-top: 0.9rem;
+    padding-top: 0.75rem;
+  }
+
+  .step-stat-value {
+    font-size: 1.55rem;
+  }
+
+  .step-lens,
+  .step-chip {
+    margin-top: 0.7rem;
+  }
+
+  .mock-banner {
+    font-size: 0.62rem;
+    padding: 0.35rem 3.6rem;
+    line-height: 1.3;
+  }
+
+  .story-close {
+    top: 0.3rem;
+    right: 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  /* Keep the pipeline and legend to one scrollable line each so they don't
+     eat the graphic's height. */
+  .pipeline,
+  .legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 0.3rem;
+  }
+
+  .pipeline::-webkit-scrollbar,
+  .legend::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pipeline {
+    gap: 0.1rem;
+  }
+
+  .pipeline-stage {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.32rem;
+  }
+
+  .pipeline-sep {
+    display: none;
+  }
+
+  .legend {
+    font-size: 0.6rem;
+    gap: 0.5rem;
+  }
+
+  .legend-title {
+    display: none;
+  }
+
+  /* The 700-unit viewBox shrinks hard on a phone; scale in-graphic type up
+     so labels stay legible. */
+  .axis-label {
+    font-size: 15px;
+  }
+
+  .axis-title,
+  .tower-label {
+    font-size: 14px;
+  }
+
+  .annotation-text {
+    font-size: 15px;
+  }
+
+  .counter-box text.counter-value {
+    font-size: 34px;
+  }
+
+  .counter-box text.counter-label {
+    font-size: 14px;
+  }
+
+  .title-card h1 {
+    font-size: 1.3rem;
+  }
+
+  .title-card p {
+    font-size: 0.78rem;
+  }
+
+  .title-card .scroll-hint {
+    margin-top: 1rem;
+  }
+}
+
+.axis-note {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 13);
+  font-family: var(--sans);
+  font-style: italic;
+}
+
+/* ---------- provenance tags ---------- */
+
+.panel-tag {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.9rem;
+  z-index: 6;
+  font-size: calc(11px * var(--chrome-scale));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.55rem;
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+.panel-tag.is-illustrative {
+  color: var(--net-5g);
+  background: rgba(230, 159, 0, 0.14);
+  border: 1px solid rgba(230, 159, 0, 0.45);
+}
+
+.panel-tag.is-measured {
+  color: var(--ring-safe);
+  background: rgba(61, 220, 151, 0.12);
+  border: 1px solid rgba(61, 220, 151, 0.45);
+}
+
+.tag {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.14rem 0.42rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+.tag.is-measured {
+  color: var(--ring-safe);
+  background: rgba(61, 220, 151, 0.12);
+  border: 1px solid rgba(61, 220, 151, 0.4);
+}
+
+.tag.is-illustrative {
+  color: var(--net-5g);
+  background: rgba(230, 159, 0, 0.12);
+  border: 1px solid rgba(230, 159, 0, 0.4);
+}
+
+/* ---------- presenter mode ---------- */
+
+.pipeline-stage:hover {
+  color: var(--fg);
+}
+
+.step.is-pitch-hidden {
+  display: none;
+}
+
+.pitch-hint {
+  position: fixed;
+  bottom: 0.6rem;
+  left: 0.9rem;
+  z-index: 60;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(11, 18, 32, 0.85);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+}
+
+/* ---------- real-release reference line ---------- */
+
+/* A strip under the graphic, not an overlay on it: the grid uses its own
+   bottom row and an absolutely positioned box would sit on top of cells. */
+.real-release {
+  flex: 0 0 auto;
+  margin-top: 0.55rem;
+  font-size: calc(12.5px * var(--chrome-scale));
+  line-height: 1.45;
+  color: var(--fg-dim);
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--ring-safe);
+  border-radius: 7px;
+  padding: 0.45rem 0.65rem;
+}
+
+.real-release .tag {
+  margin-left: 0;
+}
+
+.real-release strong {
+  color: var(--fg);
+}
+
+/* The one target dot breathes so the eye finds it instantly on a projector. */
+@keyframes target-pulse {
+  0%,
+  100% {
+    stroke-width: 2.2;
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-width: 4.5;
+    stroke-opacity: 0.45;
+  }
+}
+
+.dot.is-target {
+  animation: target-pulse 1.6s ease-in-out infinite;
+}
+
+.score-header.is-sub {
+  fill: var(--fg-dim);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.counterfactual-box {
+  fill: rgba(255, 107, 107, 0.07);
+  stroke: rgba(255, 107, 107, 0.35);
+  stroke-width: 1;
+}
+
+.counterfactual-title {
+  fill: var(--fg);
+  font-size: calc(var(--u) * 14);
+  font-weight: 600;
+  font-family: var(--sans);
+}
+
+.counterfactual-body {
+  fill: var(--fg-dim);
+  font-size: calc(var(--u) * 13);
+  font-family: var(--sans);
+}
+
+.utility-column {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 11);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
