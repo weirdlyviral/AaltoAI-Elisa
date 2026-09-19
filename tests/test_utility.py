@@ -223,8 +223,8 @@ def test_bottom_overlap_is_total_when_release_equals_raw():
     result = utility.u3_product_question(make_joined(n_cells=20, offset=0.0))
 
     bottom = result["bottom_cells_all"]
-    assert bottom["overlap"] == utility.BOTTOM_N == 10
     assert bottom["jaccard"] == 1.0
+    assert bottom["intersection"] == bottom["union"]
 
 
 def test_province_ranking_is_perfectly_correlated_when_release_equals_raw():
@@ -240,7 +240,26 @@ def test_bottom_overlap_degrades_when_the_ranking_is_reversed():
 
     result = utility.u3_product_question(joined)
 
-    assert result["bottom_cells_all"]["overlap"] < utility.BOTTOM_N
+    assert result["bottom_cells_all"]["jaccard"] < 1.0
+
+
+def test_bottom_overlap_is_not_fooled_by_a_tie_at_the_minimum():
+    """A block of cells tied at the clipped minimum must not read as a
+    perfect overlap just because both sides enumerate rows in the same order."""
+    joined = make_joined(n_cells=20, offset=0.0)
+    raw_col = f"{utility.HEADLINE_METRIC}_median_raw"
+    rel_col = f"{utility.HEADLINE_METRIC}_median_rel"
+    # Raw ties the first half at the floor; the release ties the second half.
+    joined[raw_col] = [0.5] * 10 + list(range(1, 11))
+    joined[rel_col] = list(range(1, 11)) + [0.5] * 10
+
+    result = utility.u3_product_question(joined, winsorise_lower_clip=0.5)
+    bottom = result["bottom_cells_all"]
+
+    assert bottom["tie_at_min_raw"] == 10
+    assert bottom["tie_at_min_released"] == 10
+    assert bottom["tie_is_winsorise_floor"] is True
+    assert bottom["jaccard"] == 0.0
 
 
 # --------------------------------------------------------------------------- #

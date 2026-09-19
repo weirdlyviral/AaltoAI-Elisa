@@ -67,8 +67,10 @@ Published cells contain **99.4653%** of raw rows and **99.991%** of raw subscrib
 | --- | --- |
 | Spearman rank correlation of provinces by median tp_dl_avg (20 provinces) | 0.957895 |
 | Spearman rank correlation of provinces by median http_sr_avg (20 provinces) | 0.96391 |
-| Bottom-10 worst cells, all cells (of 2,772) | 10/10 overlap, Jaccard 1.0 |
-| Bottom-10 worst cells, 5G cells only (of 1,212) | 9/10 overlap, Jaccard 0.818182 |
+| Bottom-10% worst cells (ties included), all cells (of 2,680) | Jaccard 0.98893; 268 shared of 271 in the union (268 raw, 271 released) |
+| Bottom-10% worst cells (ties included), 5G cells only (of 1,182) | Jaccard 1.0; 119 shared of 119 in the union (119 raw, 119 released) |
+
+**Ties at the bottom.** 91 cells share the minimum raw value and 96 share the minimum released value. Compared against the lower winsorise clip on `tp_dl_avg`, that tie is NOT the clip - it is a feature of the data itself.
 
 ## 5. U4 - count accuracy vs epsilon
 

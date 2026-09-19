@@ -58,6 +58,9 @@ HEADLINE_TARGET = 0.90
 
 U4_EPSILONS = (0.5, 1.0, 2.0)
 BOTTOM_N = 10
+#: U3 compares the bottom-decile cell SET rather than a fixed bottom-N list,
+#: because winsorising ties a large block of cells at the clipped minimum.
+BOTTOM_QUANTILE = 0.10
 
 #: A metric is flagged when any of mean / p95 / p99 moves by at least this much.
 DEGRADATION_FLAG_PCT = 5.0
@@ -316,7 +319,9 @@ def _weighted_province_metric(frame: pd.DataFrame, column: str, weight: str) -> 
     return (summed["num"] / summed["den"]).dropna()
 
 
-def u3_product_question(joined: pd.DataFrame) -> dict[str, Any]:
+def u3_product_question(
+    joined: pd.DataFrame, winsorise_lower_clip: float | None = None
+) -> dict[str, Any]:
     results: dict[str, Any] = {}
 
     for metric in ("tp_dl_avg", "http_sr_avg"):
@@ -329,33 +334,81 @@ def u3_product_question(joined: pd.DataFrame) -> dict[str, Any]:
         }
 
     def _bottom_overlap(frame: pd.DataFrame, label: str) -> dict[str, Any]:
+        """Jaccard overlap of the bottom-decile cell SET, ties included.
+
+        An earlier version took ``nsmallest(10)`` on each side. That is not
+        safe here: winsorising clips the lower tail of every QoE metric, so a
+        large block of cells shares the identical minimum value and
+        ``nsmallest`` breaks the tie by row order. Both sides then return the
+        same arbitrary rows and the overlap looks perfect without measuring
+        anything. Taking every cell at or below the decile threshold makes the
+        comparison tie-safe, and the tie counts below say how big the clipped
+        block actually is.
+        """
         keys = [c for c in CELL_KEYS if c in frame.columns]
-        if len(frame) < BOTTOM_N:
-            # Fewer cells than the bottom-N window: report the shape anyway so
-            # the renderer has every key it expects.
+        rel_values = frame["tp_dl_avg_median_rel"]
+        raw_values = frame["tp_dl_avg_median_raw"]
+        usable = frame[rel_values.notna() & raw_values.notna()]
+        if usable.empty:
             return {
                 "scope": label,
                 "n_cells": int(len(frame)),
-                "bottom_n": BOTTOM_N,
-                "overlap": None,
+                "quantile": BOTTOM_QUANTILE,
+                "n_bottom_released": None,
+                "n_bottom_raw": None,
+                "intersection": None,
+                "union": None,
                 "jaccard": None,
+                "tie_at_min_released": None,
+                "tie_at_min_raw": None,
             }
-        rel = frame.nsmallest(BOTTOM_N, "tp_dl_avg_median_rel")[keys]
-        raw = frame.nsmallest(BOTTOM_N, "tp_dl_avg_median_raw")[keys]
-        rel_set = {tuple(map(str, row)) for row in rel.to_numpy()}
-        raw_set = {tuple(map(str, row)) for row in raw.to_numpy()}
+
+        def _bottom_set(column: str) -> tuple[set[tuple[str, ...]], float]:
+            threshold = float(usable[column].quantile(BOTTOM_QUANTILE))
+            selected = usable[usable[column] <= threshold][keys]
+            return {tuple(map(str, row)) for row in selected.to_numpy()}, threshold
+
+        rel_set, rel_threshold = _bottom_set("tp_dl_avg_median_rel")
+        raw_set, raw_threshold = _bottom_set("tp_dl_avg_median_raw")
+
+        rel_min = float(usable["tp_dl_avg_median_rel"].min())
+        raw_min = float(usable["tp_dl_avg_median_raw"].min())
+
+        # Counts and set overlaps only: the thresholds and minima themselves
+        # are cell-level values and never leave this function.
         return {
             "scope": label,
-            "n_cells": int(len(frame)),
-            "bottom_n": BOTTOM_N,
-            "overlap": len(rel_set & raw_set),
+            "n_cells": int(len(usable)),
+            "quantile": BOTTOM_QUANTILE,
+            "n_bottom_released": len(rel_set),
+            "n_bottom_raw": len(raw_set),
+            "intersection": len(rel_set & raw_set),
+            "union": len(rel_set | raw_set),
             "jaccard": safety.round_float(jaccard(rel_set, raw_set)),
+            "tie_at_min_released": int((usable["tp_dl_avg_median_rel"] == rel_min).sum()),
+            "tie_at_min_raw": int((usable["tp_dl_avg_median_raw"] == raw_min).sum()),
+            "_raw_min": raw_min,
         }
 
     results["bottom_cells_all"] = _bottom_overlap(joined, "all cells")
     five_g = joined[joined["radio_access_type"].astype(str).str.contains("5G", case=False, na=False)]
     if len(five_g):
         results["bottom_cells_5g"] = _bottom_overlap(five_g, "5G cells only")
+
+    # Is the tie the winsorise floor, or a genuine feature of the data? The
+    # raw minimum itself is a cell-level value, so it is compared here and
+    # dropped: only the boolean leaves this function.
+    for block in (results.get("bottom_cells_all"), results.get("bottom_cells_5g")):
+        if not block:
+            continue
+        raw_min = block.pop("_raw_min", None)
+        if winsorise_lower_clip is None or raw_min is None:
+            block["tie_is_winsorise_floor"] = None
+        else:
+            block["tie_is_winsorise_floor"] = bool(
+                abs(raw_min - winsorise_lower_clip)
+                <= max(1e-9, abs(winsorise_lower_clip) * 0.02)
+            )
     return results
 
 
@@ -565,11 +618,33 @@ def render_utility_doc(report: dict[str, Any]) -> str:
     for key in ("bottom_cells_all", "bottom_cells_5g"):
         block = u3.get(key)
         if block:
+            pct = int(round(block.get("quantile", 0) * 100))
             lines.append(
-                f"| Bottom-{block['bottom_n']} worst cells, {block['scope']} "
-                f"(of {block['n_cells']:,}) | {_fmt(block['overlap'])}/{block['bottom_n']} "
-                f"overlap, Jaccard {_fmt(block['jaccard'])} |"
+                f"| Bottom-{pct}% worst cells (ties included), {block['scope']} "
+                f"(of {block['n_cells']:,}) | Jaccard {_fmt(block['jaccard'])}; "
+                f"{_fmt(block['intersection'])} shared of {_fmt(block['union'])} in the union "
+                f"({_fmt(block['n_bottom_raw'])} raw, {_fmt(block['n_bottom_released'])} released) |"
             )
+
+    all_cells = u3.get("bottom_cells_all", {})
+    if all_cells.get("tie_at_min_raw"):
+        verdict = all_cells.get("tie_is_winsorise_floor")
+        lines += [
+            "",
+            f"**Ties at the bottom.** {all_cells['tie_at_min_raw']:,} cells share the minimum "
+            f"raw value and {all_cells.get('tie_at_min_released', 0):,} share the minimum "
+            f"released value. Compared against the lower winsorise clip on "
+            f"`{HEADLINE_METRIC}`, that tie "
+            + (
+                "IS the clip: winsorising flattens the bottom of this distribution, so any "
+                "\"worst N cells\" ranking taken from below the clip is arbitrary. That is why "
+                "U3 compares the bottom-decile SET with ties included rather than a top-N list."
+                if verdict
+                else "is NOT the clip - it is a feature of the data itself."
+                if verdict is False
+                else "could not be compared with the clip."
+            ),
+        ]
 
     lines += [
         "",
@@ -722,6 +797,15 @@ def main(argv: list[str] | None = None) -> None:
     record = pd.read_parquet(RECORD_RELEASE_PATH)
     joined = join_published_cells(aggregate, raw_cells)
 
+    # The lower winsorise clip applied to the headline QoE metric, so U3 can
+    # say whether the tie at the bottom of the distribution is that clip.
+    winsorise_bounds = config.get("numeric_winsorise") or [None, None]
+    winsorise_clip = (
+        float(raw_frame[HEADLINE_METRIC].quantile(winsorise_bounds[0]))
+        if winsorise_bounds[0] is not None and HEADLINE_METRIC in raw_frame.columns
+        else None
+    )
+
     print("Scoring U1-U5...")
     report = {
         "generated": datetime.now(timezone.utc).isoformat(),
@@ -735,7 +819,7 @@ def main(argv: list[str] | None = None) -> None:
         "raw_baseline": meta,
         "U1": u1_accuracy(joined),
         "U2": u2_coverage(raw_frame, aggregate),
-        "U3": u3_product_question(joined),
+        "U3": u3_product_question(joined, winsorise_lower_clip=winsorise_clip),
         "U4": u4_count_accuracy(joined, dp_stats, stats_source),
         "U5": u5_distribution_fidelity(raw_frame, record),
     }

@@ -651,7 +651,7 @@ get the final say.
 | U2 coverage: **2G** | **82.14%** of rows | `utility_eval.json` | vs 99.72% for 4G — uneven |
 | U2 coverage: worst province | 49.40% ("Unavailable") | `utility_eval.json` | Next worst 91.85% |
 | U3 province ranking | Spearman **0.958** | `utility_eval.json` | The ranking survives |
-| U3 worst-10 cells | **10/10 overlap**, Jaccard 1.0 | `utility_eval.json` | The product question is answerable |
+| U3 worst cells | **Jaccard 0.99** on the bottom-decile set, ties included (268 of 271 cells shared) | `utility_eval.json` | The product question is answerable |
 | U4 count error at ε=1 | median **7.3%**, p90 **116%** | `utility_eval.json` | The real price of contribution bounding |
 | U5 severely degraded metrics | **5** (was 6) | `utility_eval.json` | Top-coding fix rescued `im_video_GB_sum` |
 
@@ -677,7 +677,7 @@ k-anonymised record release, 4 known points would single out 99.3% of targets
 *if* rows could be linked — the only thing stopping it is the absence of a key.
 The aggregate release removes the attack structurally rather than making it
 harder, and it still answers the product question: provinces rank at Spearman
-0.958 and the worst-10 cells match 10/10.
+0.958 and the bottom-decile worst cells overlap at Jaccard 0.99.
 
 **Why k=10.** The sweep shows the choice is nearly free: across all 24
 combinations the worst suppression is 1.22%, and our setting costs 0.32%. Going
@@ -892,7 +892,7 @@ track budget composition, and that's a gap if this became a recurring feed.
 
 **18. "Is the median really enough for a product team?"**
 For "where is quality worst", yes — and we tested it: province rankings hold at
-Spearman 0.958 and the worst-10 cells match 10/10. For capacity planning, which
+Spearman 0.958 and the bottom-decile worst cells overlap at Jaccard 0.99. For capacity planning, which
 needs totals, no — and that's exactly what top-coding broke.
 
 **19. "How do you know your attacks are real and not just asserted?"**
@@ -909,8 +909,8 @@ For counts of small cells, treat them as indicative, not exact — that is the
 honest reading. The median cell (88 subscribers) is off by 7.3%. The large error
 is concentrated where cells are near the 10-subscriber floor and the noise scale
 is 11. The QoE statistics, which is what the service-quality use case actually
-needs, are unaffected: rankings hold at Spearman 0.958 and the worst-10 cells
-match 10/10. If exact counts mattered more than membership privacy, ε=2 halves
+needs, are unaffected: rankings hold at Spearman 0.958 and the bottom-decile
+worst cells overlap at Jaccard 0.99. If exact counts mattered more than membership privacy, ε=2 halves
 the error.
 
 ---

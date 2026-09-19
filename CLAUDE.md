@@ -163,7 +163,9 @@ Quirks that shape everything:
   published cells (target >= 90%) -> PASS.** All five U1 metrics pass;
   `http_response_time_avg` is closest to the line at 91.67%.
   Coverage 99.47% of rows / 99.99% of subscribers. Province ranking holds at
-  Spearman 0.958; bottom-10 worst cells match 10/10.
+  Spearman 0.958; bottom-decile worst cells overlap at Jaccard 0.99
+  (tie-safe set comparison; the old 10/10 top-N claim was an artefact of a
+  91-cell tie at the minimum and was replaced).
   Counts at epsilon 1.0: median relative error 7.3%, p90 116% - the real price
   of honest contribution bounding (scale 1 -> 11).
   M3's non-zero p99 fix cut severely-degraded metrics from 6 to 5 and rescued
