@@ -23,7 +23,7 @@
   // ?pitch=1 — presenter mode: bigger type and only the beats worth stopping on.
   var PITCH = new URLSearchParams(window.location.search).get("pitch") === "1";
   var PITCH_FONT_SCALE = 1.2;
-  var PITCH_STOPS = ["rules-criteria", "p4", "suppress", "bars-noisy", "scoreboard", "utility-bars", "comply", "decide"];
+  var PITCH_STOPS = ["rules-criteria", "p4", "suppress", "bars-noisy", "scoreboard", "utility-target", "comply", "decide"];
   // Below this, label sizes would swamp a phone-sized graphic.
   var MAX_UNIT_PX = 1.6;
 
@@ -35,28 +35,13 @@
 
   var STEPS = [
     {
-      key: "rules-context",
-      chapter: 0,
-      headline: "The rules this data lives under.",
-      body:
-        "Elisa's data was collected to run the network, not for product analytics. Removing " +
-        "the phone number does not change its legal status; only genuine anonymisation does. " +
-        "The rules below set the context for every choice that follows: a recipient needs " +
-        "evidence that the release protects people, while Elisa still owns the purpose and " +
-        "lawful-basis decision.",
-      lawCards: true,
-      lens: null,
-      chip: null,
-    },
-    {
       key: "rules-criteria",
       chapter: 0,
-      headline: "What passing means.",
+      headline: "What we have to prove",
       body:
-        "The challenge asks: \"Can you clearly demonstrate resistance to isolation, linkage and " +
-        "inference risks?\" We use those three questions as the test throughout the story. " +
-        "They are criteria to evidence against a defined recipient, not a promise that every " +
-        "possible attacker has disappeared.",
+        "Elisa's brief asks whether we can demonstrate resistance to isolation, linkage and " +
+        "inference. Those three questions are the test for everything that follows — evidence " +
+        "against a defined recipient, not a promise that every possible attacker has disappeared.",
       criteriaTiles: true,
       lens: null,
       chip: null,
@@ -66,254 +51,109 @@
       chapter: 0,
       headline: "Meet the data",
       body:
-        "Every time a phone uses the network, the equipment logs how well the connection " +
-        "worked: download speed, latency, how much data moved. One row is one subscriber's " +
-        "traffic in one short window at one cell tower. Elisa's engineers need this to find " +
-        "where the network is slow — but a raw row also carries the phone number, the SIM and " +
-        "the handset. Watch the dots fade in around the towers: each dot is one subscriber, " +
-        "and its colour is the network they were on.",
+        "One row is one subscriber's traffic at one cell tower in one short window: speed, " +
+        "latency, volume. Each dot is a subscriber coloured by network — and every raw row " +
+        "also carries the phone number, the SIM and the handset.",
       stat: { value: "{n_subscribers}", label: "subscribers in a single hour" },
       chip: "profile.py · {n_rows} rows · one hour, one date",
-      lens: "GDPR Art. 5(1)(b) purpose limitation · 917/2014 traffic-data purposes",
-    },
-    {
-      key: "tags-off",
-      chapter: 1,
-      headline: "Strip the direct identifiers",
-      body:
-        "The obvious first move is to delete whatever names a person outright: the phone " +
-        "number, the SIM identity and the handset identity. We drop all three, and the " +
-        "pipeline refuses to write any file that still contains one — that check runs before " +
-        "every save. Watch the small grey ID tags detach from every dot and fall away. " +
-        "Nothing else about the row changes: same tower, same moment, same measured speed.",
-      stat: { value: "3", label: "direct identifier columns removed" },
-      chip: "anonymise.py · drop msisdn, imsi, imei",
-      lens: "GDPR Recital 26 (pseudonymised ≠ anonymous) · EDPB 02/2026 para 50 (simple cases)",
+      lens: null,
     },
     {
       key: "rings-dashed",
       chapter: 1,
-      headline: "Pseudonymous is not anonymous",
+      headline: "Removing names is not enough",
       body:
-        "It is tempting to stop here, and plenty of projects do. But removing names does not " +
-        "make data anonymous — it makes it pseudonymous. The rows still describe real people, " +
-        "and the attributes left behind can still point back at one of them. Regulators treat " +
-        "that as personal data. Watch a dashed grey ring appear around every dot: that ring " +
-        "means identifiers removed, but still identifiable. The rest of this story is about " +
-        "turning those rings green.",
-      stat: { value: "0", label: "direct identifiers left — and still not anonymous" },
-      chip: "anonymise.py · identifiers removed, attributes remain",
-      lens: "GDPR Recital 26 (pseudonymised ≠ anonymous) · EDPB 02/2026 para 50 (simple cases)",
-    },
-    {
-      key: "target",
-      chapter: 1,
-      headline: "Now play the attacker",
-      body:
-        "To test whether stripped data is really anonymous, we attack it ourselves. Suppose " +
-        "you know a handful of places and times where one specific person was — a colleague " +
-        "whose desk you share, someone whose commute you know. You have no phone number and " +
-        "no account: you only know where they were. Watch one dot take a red ring. That is " +
-        "our target. Every other dot is still a candidate, and we now add what the attacker " +
-        "knows, one observation at a time.",
-      stat: { value: "1", label: "target — everyone else still a candidate" },
-      chip: "baseline_risk.py · R2 trajectory uniqueness",
-      lens: null,
-    },
-    {
-      key: "p1",
-      chapter: 1,
-      headline: "One known point narrows nothing",
-      body:
-        "The attacker's first piece of knowledge: the target was at this tower, in this " +
-        "quarter-hour. Watch the first point light up, and watch every dot that was somewhere " +
-        "else dim away. Plenty of people are left — a busy cell in a busy window holds " +
-        "thousands of subscribers, and being one of them says almost nothing about you. On " +
-        "our measured data, a single known point uniquely identifies nobody at all.",
-      stat: { value: "{r2_1}%", label: "of subscribers uniquely identified" },
-      chip: "baseline_risk.py · R2, p = 1",
+        "We drop all three direct identifiers — msisdn, imsi, imei — and the pipeline refuses " +
+        "to write any file that still holds one. The dashed rings say what is left: " +
+        "identifiers gone, people still identifiable. That is pseudonymous, not anonymous.",
+      stat: { value: "3", label: "direct identifiers dropped — and still not anonymous" },
+      chip: "anonymise.py · drop msisdn, imsi, imei",
       lens: null,
     },
     {
       key: "p2",
       chapter: 1,
-      headline: "Two points, and it starts",
+      headline: "Two places, and it starts",
       body:
-        "Add a second observation: a different tower, a different quarter-hour. Watch the " +
-        "first leg of the trail draw, and watch the surviving candidates thin out sharply. " +
-        "Being in one place is ordinary; being in two particular places within the same hour " +
-        "is far rarer. On our data, two known points already pin down more than one person in " +
-        "ten — and the attacker has learned nothing about the network, only about a person.",
-      stat: { value: "{r2_2}%", label: "of subscribers uniquely identified" },
-      chip: "baseline_risk.py · R2, p = 2",
-      lens: null,
-    },
-    {
-      key: "p3",
-      chapter: 1,
-      headline: "Three points, most people",
-      body:
-        "A third observation. Watch the trail extend again and the bright dots all but " +
-        "vanish. Human movement is intensely distinctive: the sequence of towers you pass " +
-        "through in an hour behaves like a fingerprint, even though no single tower means " +
-        "anything by itself. With three known points, the large majority of subscribers in " +
-        "this extract become unique — exactly one row pattern matches them.",
-      stat: { value: "{r2_3}%", label: "of subscribers uniquely identified" },
-      chip: "baseline_risk.py · R2, p = 3",
+        "Now play the attacker: you know only where one person was, and when. One tower in " +
+        "one quarter-hour singles out nobody at all; two already pin down more than one " +
+        "subscriber in ten.",
+      stat: { value: "{r2_2}%", label: "of subscribers uniquely identified by two known points" },
+      chip: "baseline_risk.py · trajectory uniqueness",
       lens: null,
     },
     {
       key: "p4",
       chapter: 1,
-      headline: "Four points, almost everyone",
+      headline: "Four places, almost everyone",
       body:
-        "With a fourth observation only the target is left. This is the measurement that " +
-        "drives the whole design: four known tower-and-time pairs single out almost every " +
-        "subscriber who moved that much during the hour. Deleting the phone number did " +
-        "nothing to stop it. To actually anonymise this data we have to attack the thing that " +
-        "makes people unique — the sheer precision of where and when.",
+        "A fourth observation leaves only the target. Four tower-and-time pairs single out " +
+        "almost every subscriber who moved that much in the hour — and deleting the phone " +
+        "number did nothing to stop it.",
       stat: { value: "{r2_4}%", label: "of subscribers uniquely identified" },
-      chip: "baseline_risk.py · R2, p = 4",
-      lens: "EDPB No Linkage (para 60) / No Record Isolation (para 55)",
-    },
-    {
-      key: "blur-place",
-      chapter: 2,
-      headline: "Blur where",
-      body:
-        "So we make location coarser. Instead of the exact cell tower we publish an area, and " +
-        "where an area holds too few people we fall back to the whole province. Think of " +
-        "describing someone as a man in a dark suit rather than the man in the navy pinstripe " +
-        "with the beagle: the first description fits thousands of people, the second fits " +
-        "one. Watch the towers dissolve into labelled regions and the dots drift into them.",
-      stat: { value: "{n_provinces}", label: "provinces as the coarsest fallback" },
-      chip: "anonymise.py · area_mode = enb_tokenised",
-      lens: "GDPR Art. 5(1)(c) minimisation · 917/2014 location data published only at province level",
+      chip: "baseline_risk.py · trajectory uniqueness, 4 points",
+      lens: null,
     },
     {
       key: "blur-time",
       chapter: 2,
-      headline: "Blur when",
+      headline: "Blur where, blur when",
       body:
-        "Then the same treatment for time. The raw logs resolve to the minute; we round every " +
-        "row into a {time_bucket}-minute window, so a whole hour collapses into four columns. " +
-        "Watch each region split into those windows. Everybody now sits in a bucket of place " +
-        "and time rather than at a point. Look at how thin some rows already are — those " +
-        "small groups are exactly where the remaining risk lives.",
+        "So we attack precision itself: exact cell towers become tokenised areas that fall " +
+        "back to the province when too few people share one, and minute-level timestamps " +
+        "round into {time_bucket}-minute windows. Everybody now sits in a bucket of place and " +
+        "time rather than at a point.",
       stat: { value: "{time_bucket} min", label: "time resolution, down from one minute" },
-      chip: "anonymise.py · time_bucket_minutes = {time_bucket}",
-      lens: "GDPR Art. 5(1)(c) minimisation · 917/2014 location data published only at province level",
-    },
-    {
-      key: "counts",
-      chapter: 3,
-      headline: "Count the people in each bucket",
-      body:
-        "Blurring alone is not enough — a bucket with one person in it is still that person. So " +
-        "before anything is published we count how many distinct subscribers fall into every " +
-        "bucket. Watch a count appear on each cell. Note that we count people, not rows: a " +
-        "subscriber who generated twenty rows in one bucket counts once. That is the stricter " +
-        "reading, and the one that actually matches what an attacker would be trying to isolate.",
-      stat: { value: "{k}", label: "distinct people required in any published group" },
-      chip: "anonymise.py · k = {k}, counted on distinct subscribers",
-      lens: "EDPB para 55 (No Record Isolation) · para 36 (protection must hold for ALL individuals, hence worst-off reporting)",
+      chip: "anonymise.py · area tokens + {time_bucket}-min buckets",
+      lens: null,
     },
     {
       key: "k-rings",
       chapter: 3,
-      headline: "Groups of ten or more are safe",
+      headline: "Ten people, or nobody",
       body:
-        "A bucket holding at least k distinct people gives an attacker no way to isolate one of " +
-        "them: on the published attributes, every record in it looks like every other. Watch " +
-        "the rings turn from dashed grey to green in every cell that clears the threshold. " +
-        "Those green rings are the first real guarantee in this story — not a promise that " +
-        "nothing can be learned, but a floor on how precisely anyone can be picked out.",
+        "Before anything is published we count distinct subscribers — people, not rows — in " +
+        "every bucket. Where at least k = {k} of them share one, no individual inside can be " +
+        "picked out on the published attributes: the rings turn green.",
       stat: { value: "{k}+", label: "distinct subscribers behind every green ring" },
       chip: "anonymise.py · k-anonymity on distinct subscribers",
-      lens: "EDPB para 55 (No Record Isolation) · para 36 (protection must hold for ALL individuals, hence worst-off reporting)",
+      lens: null,
     },
     {
       key: "suppress",
       chapter: 3,
       headline: "Rare groups pay the price",
       body:
-        "Buckets that stay under the threshold cannot be published at all, so we drop them. " +
-        "Watch the thin cells fade out. This is the real cost of anonymisation and it is not " +
-        "shared evenly: common combinations survive almost intact while rare ones disappear, " +
-        "and the people in rare groups are often exactly the ones a network team most wants to " +
-        "see. Older network types take the worst of it.",
+        "Buckets under the threshold cannot be published, so we drop them. The cost is not " +
+        "shared evenly — {cov_2g}% of 2G rows survive against {cov_4g}% of 4G — and rare " +
+        "groups are often exactly the ones a network team wants to see.",
       stat: { value: "{cov_2g}% vs {cov_4g}%", label: "of rows kept — 2G against 4G" },
       chip: "anonymise.py · suppress groups below k",
-      lens: "EDPB para 55 (No Record Isolation) · para 36 (protection must hold for ALL individuals, hence worst-off reporting)",
-    },
-    {
-      key: "bars",
-      chapter: 4,
-      headline: "Publish counts, not people",
-      body:
-        "What a product team actually receives is not a pile of rows at all. Each surviving " +
-        "bucket collapses into one line: how many people were in it, and the spread of their " +
-        "measurements. Watch the dots in every cell fuse into a single bar whose height is the " +
-        "count. Individual records stop existing at this point — there is nothing left to " +
-        "single out, because the smallest published thing is now a group.",
-      stat: { value: "{n_published_cells}", label: "published cells in the real release" },
-      chip: "anonymise.py · aggregate release",
       lens: null,
     },
     {
       key: "bars-noisy",
       chapter: 4,
-      headline: "Then blur the counts too",
+      headline: "Publish counts, not people",
       body:
-        "Even a count leaks. If you know everything about a release except whether one person " +
-        "is in it, an exact count answers that question. So we add calibrated random noise to " +
-        "every published count — differential privacy at a budget of ε = {epsilon}. Watch each " +
-        "bar jump to its published value. The noise is small next to a group and large next to " +
-        "one person, which is exactly the trade it is meant to make.",
+        "Each surviving bucket collapses into one line: how many people were in it, and the " +
+        "spread of their measurements. An exact count still leaks membership, so every " +
+        "published count gets calibrated Laplace noise at ε = {epsilon}.",
       stat: { value: "ε = {epsilon}", label: "privacy budget on every published count" },
       chip: "anonymise.py · Laplace, scale {dp_scale}, seed 42",
-      lens: "EDPB para 67, 71b (No Inference; with/without-individual test) · para 76 (aggregate differencing)",
-    },
-    {
-      key: "attacks-isolation",
-      chapter: 5,
-      headline: "Now try to break it",
-      body:
-        "A design is only as good as the attacks it survives, so we wrote six and ran them " +
-        "against the releases. The first two go after isolation: can anyone point at one record " +
-        "and say that is you? Watch the first two cards resolve. A1 checks whether any " +
-        "published row stands alone. A4 asks what happens when the attacker also knows roughly " +
-        "how much data the target used — the case that still leaves residual risk.",
-      stat: { value: "6", label: "attacks implemented and measured, not assumed" },
-      chip: "evaluate.py · A1, A4",
-      lens: null,
-    },
-    {
-      key: "attacks-linkage",
-      chapter: 5,
-      headline: "Can anyone join the dots?",
-      body:
-        "The third attack asks whether two records can be tied back to the same person. In the " +
-        "published release they cannot: there is no subscriber key of any kind, not even a " +
-        "hash, so there is nothing to join on. That defence is structural rather than " +
-        "statistical, and it is worth stating plainly — if we ever added a persistent " +
-        "pseudonym, the trajectory attack from earlier in this story would come straight back.",
-      stat: { value: "0", label: "keys, hashes or pseudonyms in the release" },
-      chip: "evaluate.py · A2",
       lens: null,
     },
     {
       key: "attacks-inference",
       chapter: 5,
-      headline: "What can still be inferred?",
+      headline: "Then we attacked it",
       body:
-        "The last three go after inference — not who someone is, but what can be learned about " +
-        "them. A3 hunts for groups where everyone shares a revealing attribute. A5 tries to " +
-        "reconstruct a suppressed cell by subtracting the cells around it. A6 is the strongest " +
-        "adversary we can write: someone holding everyone else's data who only wants to know " +
-        "whether you are in the release at all. Watch the last three cards resolve.",
-      stat: { value: "{a6}%", label: "membership-inference accuracy against a 50% coin flip" },
-      chip: "evaluate.py · A3, A5, A6",
+        "Six attacks, written and run against the release rather than assumed away: singling " +
+        "out a row, linking two rows, inferring an attribute, recovering a suppressed cell by " +
+        "differencing, and membership inference by an adversary holding everyone else's data. " +
+        "That last one — the strongest we can write — reaches {a6}% against a 50% coin flip.",
+      stat: { value: "6", label: "attacks measured, not assumed" },
+      chip: "evaluate.py · A1–A6",
       lens: null,
     },
     {
@@ -321,42 +161,23 @@
       chapter: 5,
       headline: "The scoreboard, both ways",
       body:
-        "The EDPB asks three questions, and the honest answer depends on which attacker you " +
-        "assume. Under the contextual approach — an Elisa product team with no raw access, no " +
-        "keys and no auxiliary identity data — all three criteria hold. Under the simplified " +
-        "approach, which grants capabilities the recipient does not have, the row-level " +
-        "record release fails on outliers while the aggregate — the release we actually " +
-        "ship — holds, with one named weakness. The verdict rules are written down, not " +
-        "improvised per slide.",
+        "Against our defined recipient — an Elisa product team with no raw access and no " +
+        "identity data — all three criteria hold. Under the stricter simplified approach the " +
+        "row-level release fails on outliers, while the aggregate release we actually ship " +
+        "holds, with one named residual.",
       stat: { value: "{criteria_met} / {criteria_total}", label: "criteria met by the aggregate release, both approaches" },
       chip: "verdicts.py · rules mirrored in risk_assessment.md",
-      lens: "EDPB paras 45–49 (contextual vs simplified) · para 97 (compiling results)",
-    },
-    {
-      key: "utility-bars",
-      chapter: 6,
-      headline: "Is any of it still useful?",
-      body:
-        "Privacy you can measure is worthless if the data stops answering questions, so we " +
-        "measured that too. For every published cell we compared the median of each quality " +
-        "metric against the same cell computed on raw data. Watch a bar appear for each metric: " +
-        "the share of cells landing within {u1_tolerance}% of the truth. Download throughput — " +
-        "the number an engineer reaches for first — holds in {u1}% of cells.",
-      stat: { value: "{u1}%", label: "of cells keep median download speed within {u1_tolerance}%" },
-      chip: "utility.py · U1, tolerance {u1_tolerance}%",
-      lens: "GDPR Art. 5(1)(c): only data needed for the stated purpose is kept useful",
+      lens: null,
     },
     {
       key: "utility-target",
       chapter: 6,
-      headline: "Where it holds and where it bends",
+      headline: "Is any of it still useful?",
       body:
-        "The line marks the {u1_target}% target we set before running any of this. Every metric " +
-        "clears it, but not by the same margin: HTTP response time sits lowest, because " +
-        "clipping its long tail moves the middle of that distribution more than it moves " +
-        "throughput. Ranking survives as well — provinces ordered by speed come out at a " +
-        "Spearman correlation of {u3_spearman}, and the worst tenth of cells is almost the " +
-        "same set before and after: {u3_shared} of {u3_union} cells shared.",
+        "For every published cell we compared each metric's median against the same cell " +
+        "computed on raw data. {u1}% of cells keep download speed within {u1_tolerance}%, " +
+        "every metric clears the {u1_target}% target we set beforehand, and province rankings " +
+        "survive at a Spearman correlation of {u3_spearman}.",
       stat: {
         value: "{u3_jaccard}",
         label: "Jaccard overlap of the worst-decile cells ({u3_shared} of {u3_union} shared)",
@@ -369,13 +190,12 @@
       chapter: 6,
       headline: "What we cannot promise",
       body:
-        "Everything above is measured, which also means everything above is bounded by what we " +
-        "measured. Five things we would say to a regulator without being asked:",
+        "Everything above is measured, which also bounds what we are entitled to claim. Four " +
+        "things we would tell a regulator unprompted:",
       limitations: [
-        "This is one fabricated hour on one date. Longitudinal and device-based risks are untested here, not absent.",
-        "Rare groups are suppressed rather than protected — the people hardest to see are the ones we drop.",
-        "Differential privacy covers the published counts. The medians rely on the group-size threshold instead.",
-        "Under the simplified attacker model the record release still fails on outliers; the aggregate is what we recommend.",
+        "One fabricated hour on one date. Longitudinal and device risks are untested here, not absent.",
+        "Rare groups are suppressed, not protected — the people hardest to see are the ones we drop.",
+        "ε covers the published counts; the medians rely on the group-size threshold instead.",
         "A risk assessment is true for a moment. Auxiliary data keeps growing, so this needs re-running, not filing.",
       ],
       stat: null,
@@ -387,11 +207,10 @@
       chapter: 7,
       headline: "You decide",
       body:
-        "Every setting in this pipeline is a dial between insight and risk. A larger k protects " +
-        "more people and deletes more rare groups. A smaller ε adds more noise and blurs more " +
-        "counts. No setting is simply correct, which is why the choice belongs to someone who " +
-        "can be accountable for it rather than to a default in a config file. The explorer lets " +
-        "you move those dials and watch both sides move together.",
+        "Every setting here is a dial between insight and risk: a larger k protects more " +
+        "people and deletes more rare groups, a smaller ε blurs more counts. No setting is " +
+        "simply correct, which is why the choice belongs to someone who can be accountable " +
+        "for it.",
       stat: null,
       chip: null,
       lens: null,
@@ -405,7 +224,7 @@
   // Existing pipeline chapters shift right for RULES; COMPLY sits immediately
   // before the final decision chapter.
   STEPS.forEach(function (step) {
-    if (step.key === "rules-context" || step.key === "rules-criteria") return;
+    if (step.key === "rules-criteria") return;
     step.chapter = step.chapter === 7 ? 9 : step.chapter + 1;
   });
   STEPS.splice(STEPS.length - 1, 0, {
@@ -413,9 +232,9 @@
     chapter: 8,
     headline: "How we comply — and what stays Elisa's call",
     body:
-      "The controls below make the method inspectable. Ten are evidenced in the pipeline and " +
-      "its records; one question remains with Elisa's legal team. The release can demonstrate " +
-      "resistance to the three criteria, but it cannot decide its own lawful purpose.",
+      "Ten controls are evidenced in the pipeline and its records; one question stays with " +
+      "Elisa's legal team. The release can demonstrate resistance to the three criteria, but " +
+      "it cannot decide its own lawful purpose.",
     compliance: true,
     stat: { value: "{controls_evidenced} / {controls_total}", label: "controls evidenced · 1 decision for Elisa" },
     lens: null,
@@ -2399,6 +2218,16 @@
   /* The story is served from its own port, so links back into the Streamlit
      app use the origin the reader arrived from. */
   function appBaseUrl() {
+    /* Embedded, this is a srcdoc iframe: the parent's origin is the app's. A
+       srcdoc document often reports no referrer at all, which is how the CTAs
+       used to fall through to localhost on the deployed app. */
+    try {
+      if (window.parent !== window && window.parent.location.origin) {
+        return window.parent.location.origin;
+      }
+    } catch (error) {
+      /* cross-origin parent; try the referrer instead */
+    }
     try {
       if (document.referrer) return new URL(document.referrer).origin;
     } catch (error) {
@@ -2442,7 +2271,7 @@
               return (
                 '<a class="step-button' +
                 (action.primary ? "" : " is-secondary") +
-                '" href="' +
+                '" target="_top" href="' +
                 appBaseUrl() +
                 "/" +
                 action.path +

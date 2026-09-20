@@ -1,22 +1,8 @@
-/* Shared dark theme with the story page (app/static/story/story.css); both
+/* Shared light theme with the story page (app/static/story/story.css); both
    take their colours from app/static/tokens.css.
-   Fonts come from the same local static server that serves the story. */
-
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("http://127.0.0.1:8765/vendor/fonts/inter-latin-var.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "Source Serif 4";
-  font-style: normal;
-  font-weight: 200 900;
-  font-display: swap;
-  src: url("http://127.0.0.1:8765/vendor/fonts/source-serif-4-latin-var.woff2") format("woff2");
-}
+   The @font-face rules are NOT here: lib/theme.font_face_css() injects them
+   with the woff2 inlined, because a hosted deployment has no origin to serve
+   the files from. */
 
 :root {
   /* Colours come from app/static/tokens.css, injected ahead of this file by
@@ -33,6 +19,21 @@
 footer {
   display: none !important;
   visibility: hidden !important;
+}
+
+/* Streamlit 1.39 test ids. The names used before (collapsedControl,
+   stAppViewBlockContainer) are absent from the 1.39 DOM, so those rules were
+   dead: the header band and the sidebar chevron survived on the deployed app.
+   stHeader is hidden for every page, not only the sidebar-less ones, and the
+   6rem of top padding Streamlit reserves for it goes with it. */
+[data-testid="stHeader"] {
+  display: none !important;
+}
+
+[data-testid="stMainBlockContainer"] {
+  padding-top: 1.75rem !important;
+  /* clears the fixed recipient badge so it never sits over the tool cards */
+  padding-bottom: 7rem !important;
 }
 
 html,
@@ -82,6 +83,20 @@ body,
   color: var(--fg);
 }
 
+/* The nav entry for the page you are on: same metrics as the link above, so
+   the row does not shift when the marker replaces a link. */
+.aas-nav-current {
+  align-items: center;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+  display: flex;
+  font-size: 0.86rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.75rem;
+}
+
 .aas-sidebar-kicker {
   color: var(--accent);
   font-size: 0.64rem;
@@ -104,11 +119,6 @@ body,
   letter-spacing: 0.14em;
   margin: 1.2rem 0 0.4rem;
   padding-top: 0.8rem;
-}
-
-/* Clear the fixed recipient badge so it never sits over the tool cards. */
-[data-testid="stAppViewBlockContainer"] {
-  padding-bottom: 9rem;
 }
 
 h1,
@@ -142,15 +152,24 @@ h3 {
 
 /* ---- hero ---- */
 
+.aas-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0.2rem 0 0.6rem 0;
+}
+
 .aas-hero {
   font-family: var(--aas-serif);
   font-weight: 600;
-  font-size: 2.6rem;
-  line-height: 1.16;
+  font-size: 3.1rem;
+  line-height: 1.1;
   letter-spacing: -0.015em;
   color: var(--fg);
   margin: 0.4rem 0 0.7rem 0;
-  max-width: 24ch;
+  max-width: 20ch;
 }
 
 .aas-sub {
@@ -183,9 +202,24 @@ h3 {
   color: var(--fg-dim);
 }
 
-.aas-stat-line .aas-after {
+.aas-stat-line .aas-after,
+.aas-stat-value .aas-after {
   color: var(--ring-safe);
   font-weight: 600;
+}
+
+.aas-stat-value {
+  font-family: var(--aas-serif);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.aas-stat-head {
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  color: var(--fg);
 }
 
 .aas-stat-note {
@@ -193,6 +227,41 @@ h3 {
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--muted);
+}
+
+/* ---- walkthrough CTA ---- */
+
+.aas-cta {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 10px;
+  padding: 0.85rem 1.5rem;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.aas-cta:hover {
+  transform: translateY(-2px);
+}
+
+.aas-cta:focus-visible {
+  outline: 2px solid var(--ring-safe);
+  outline-offset: 2px;
+}
+
+.aas-cta-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--on-accent);
+}
+
+.aas-cta-note {
+  font-size: 0.78rem;
+  color: var(--on-accent);
+  opacity: 0.8;
 }
 
 /* ---- tool cards ---- */

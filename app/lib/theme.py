@@ -7,6 +7,8 @@ by the local static server, which is also what serves the story.
 """
 from __future__ import annotations
 
+import base64
+import functools
 import os
 import re
 from pathlib import Path
@@ -15,6 +17,7 @@ import streamlit as st
 
 ASSETS_DIR = Path(__file__).resolve().parents[1] / "assets"
 TOKENS_PATH = Path(__file__).resolve().parents[1] / "static" / "tokens.css"
+FONTS_DIR = Path(__file__).resolve().parents[1] / "static" / "vendor" / "fonts"
 
 PROJECT_NAME = "Anonymity Assessment Studio"
 TAGLINE = "Elisa network data — recipient-side risk & utility, never raw rows"
@@ -25,6 +28,20 @@ RECIPIENT_BADGE_TEXT = (
 )
 
 PROTOTYPE_NOTICE = "Hackathon prototype — not an Elisa product"
+
+NAV_PAGES = (
+    ("Home.py", "Home"),
+    ("pages/1_Trade-off_Explorer.py", "Explorer"),
+    ("pages/2_AI_Analyst.py", "AI Analyst"),
+)
+
+# setup_page title -> nav label. The Story page is deliberately absent from
+# the nav and maps to nothing, so it highlights no entry.
+NAV_LABEL_BY_TITLE = {
+    PROJECT_NAME: "Home",
+    "Trade-off Explorer": "Explorer",
+    "AI Analyst": "AI Analyst",
+}
 
 
 def _load_hosted_secrets() -> None:
@@ -87,19 +104,28 @@ def setup_page(
     show_header: bool = True,
     show_footer: bool = True,
 ) -> None:
-    st.set_page_config(page_title=f"{title} · {PROJECT_NAME}", page_icon=icon, layout="wide")
+    st.set_page_config(
+        page_title=f"{title} · {PROJECT_NAME}",
+        page_icon=icon,
+        layout="wide",
+        initial_sidebar_state="expanded" if show_sidebar else "collapsed",
+    )
     _load_hosted_secrets()
     _ensure_assets_served()
     _inject_css()
     if not show_sidebar:
+        # Streamlit 1.39 test ids. 'collapsedControl' is not in this DOM, which
+        # is why the expand chevron survived every previous attempt to hide it.
+        # stHeader is hidden for all pages from styles.css, not from here.
         st.markdown(
-            "<style>[data-testid='stSidebar'], [data-testid='collapsedControl'] "
-            "{ display: none !important; }"
-            " [data-testid='stHeader'] { display: none !important; }</style>",
+            "<style>[data-testid='stSidebar'],"
+            " [data-testid='stSidebarCollapsedControl'],"
+            " [data-testid='stSidebarCollapseButton']"
+            " { display: none !important; }</style>",
             unsafe_allow_html=True,
         )
     if show_nav:
-        _render_nav()
+        _render_nav(NAV_LABEL_BY_TITLE.get(title, ""))
     if show_header:
         st.markdown(
             f"<div class='aas-header'>"
@@ -114,20 +140,24 @@ def setup_page(
         _render_footer_badge()
 
 
-def _render_nav() -> None:
-    def page_link(path: str, label: str) -> None:
+def _render_nav(active: str = "") -> None:
+    """The top row. The current page renders as a marker, not as a link."""
+
+    def entry(path: str, label: str) -> None:
+        if label and label == active:
+            st.markdown(
+                f"<span class='aas-nav-current'>{label}</span>", unsafe_allow_html=True
+            )
+            return
         try:
             st.page_link(path, label=label)
         except st.errors.StreamlitPageNotFoundError:
             st.markdown(f"[{label}]({path})")
 
     nav = st.columns([2, 1.25, 1.25, 1.25, 2], gap="small")
-    with nav[1]:
-        page_link("Home.py", label="Home")
-    with nav[2]:
-        page_link("pages/1_Trade-off_Explorer.py", label="Explorer")
-    with nav[3]:
-        page_link("pages/2_AI_Analyst.py", label="AI Analyst")
+    for column, (path, label) in zip(nav[1:4], NAV_PAGES):
+        with column:
+            entry(path, label)
 
 
 def _ensure_assets_served() -> None:
@@ -141,19 +171,41 @@ def _ensure_assets_served() -> None:
         pass  # port taken by something else; fonts fall back to the system stack
 
 
+@functools.lru_cache(maxsize=1)
+def font_face_css() -> str:
+    """The two @font-face rules with their woff2 inlined as data URIs.
+
+    A hosted deployment has no origin of its own to serve a binary from
+    (lib/static_server.py explains why Streamlit's static route is unusable),
+    and the story runs inside a srcdoc iframe, which has no base URL a relative
+    src could resolve against. A data URI is the only src that works on both
+    surfaces. ~99 KB of woff2, ~133 KB once base64-encoded.
+    """
+    faces = (
+        ("Inter", "100 900", "inter-latin-var.woff2"),
+        ("Source Serif 4", "200 900", "source-serif-4-latin-var.woff2"),
+    )
+    rules = []
+    for family, weight, filename in faces:
+        encoded = base64.b64encode((FONTS_DIR / filename).read_bytes()).decode("ascii")
+        rules.append(
+            "@font-face {\n"
+            f'  font-family: "{family}";\n'
+            "  font-style: normal;\n"
+            f"  font-weight: {weight};\n"
+            "  font-display: swap;\n"
+            f'  src: url("data:font/woff2;base64,{encoded}") format("woff2");\n'
+            "}\n"
+        )
+    return "\n".join(rules)
+
+
 def _inject_css() -> None:
-    # tokens.css first and inline: it must not depend on the static server.
-    css = TOKENS_PATH.read_text()
+    # Fonts first, then tokens.css: neither may depend on the static server.
+    css = font_face_css() + TOKENS_PATH.read_text()
     css_path = ASSETS_DIR / "styles.css"
     if css_path.exists():
-        # Local development uses the bundled server; hosted deployments use
-        # the public static story origin for the same vendored fonts.
-        from . import static_server
-
-        static_origin = os.getenv("AAS_STORY_URL", "").strip().rstrip("/")
-        if not static_origin:
-            static_origin = f"http://{static_server.HOST}:{static_server.PORT}"
-        css += css_path.read_text().replace("http://127.0.0.1:8765", static_origin)
+        css += css_path.read_text()
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 

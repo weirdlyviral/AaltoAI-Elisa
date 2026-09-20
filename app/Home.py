@@ -19,6 +19,10 @@ from lib import data, theme
 theme.setup_page("Anonymity Assessment Studio", icon="🔒", show_title=False)
 
 st.markdown(
+    "<div class='aas-eyebrow'>Elisa challenge · EDPB Guidelines 02/2026</div>",
+    unsafe_allow_html=True,
+)
+st.markdown(
     "<div class='aas-hero'>How do you share network data without sharing people?</div>",
     unsafe_allow_html=True,
 )
@@ -34,23 +38,24 @@ def _pct(value: float | None, decimals: int = 1) -> str:
     return "—" if value is None else f"{value:.{decimals}f}%"
 
 
-def _statement(line_html: str, note: str) -> str:
+def _stat_card(value_html: str, head: str, note: str) -> str:
     return (
-        f"<div class='aas-stat'><div class='aas-stat-line'>{line_html}</div>"
+        f"<div class='aas-stat'><div class='aas-stat-value'>{value_html}</div>"
+        f"<div class='aas-stat-head'>{head}</div>"
         f"<div class='aas-stat-note'>{note}</div></div>"
     )
 
 
 numbers = data.headline_numbers()
 unique_rows = numbers["a1_unique_rows_pct"]
-after_rows = "0 unique rows" if unique_rows == 0 else f"{_pct(unique_rows, 2)} unique rows"
+after_value = "0" if unique_rows == 0 else _pct(unique_rows, 2)
 
 cols = st.columns(3, gap="medium")
 with cols[0]:
     st.markdown(
-        _statement(
-            f"<span class='aas-before'>Before: {_pct(numbers['baseline_unique_pct'])} "
-            f"identifiable</span> → <span class='aas-after'>After: {after_rows}</span>",
+        _stat_card(
+            f"{_pct(numbers['baseline_unique_pct'])} → <span class='aas-after'>{after_value}</span>",
+            "subscribers with a unique row, before → after",
             "Share of subscribers owning at least one row unique on the quasi-identifiers, "
             "raw versus the published record release.",
         ),
@@ -58,9 +63,9 @@ with cols[0]:
     )
 with cols[1]:
     st.markdown(
-        _statement(
-            f"<span class='aas-after'>{_pct(numbers['u1_headline_pct'])}</span> of published "
-            "cells keep speed within 5%",
+        _stat_card(
+            _pct(numbers["u1_headline_pct"]),
+            "of published cells keep download speed within 5%",
             "Median download throughput per published cell, compared against the same cell "
             "computed on raw data.",
         ),
@@ -68,9 +73,9 @@ with cols[1]:
     )
 with cols[2]:
     st.markdown(
-        _statement(
-            f"Membership guess: <span class='aas-after'>{_pct(numbers['a6_accuracy_pct'])}</span> "
-            "≈ coin flip (50%)",
+        _stat_card(
+            _pct(numbers["a6_accuracy_pct"]),
+            "membership guess, against a 50% coin flip",
             "An attacker with every other subscriber's data trying to tell whether one person "
             "is in the release, at the deployed privacy budget.",
         ),
@@ -80,16 +85,13 @@ with cols[2]:
 st.write("")
 
 st.markdown("<div class='aas-section-label'>Walkthrough</div>", unsafe_allow_html=True)
-try:
-    st.page_link(
-        "pages/3_Story.py",
-        label="Open the anonymisation walkthrough",
-        icon="▶️",
-        use_container_width=True,
-    )
-except st.errors.StreamlitPageNotFoundError:
-    st.warning("The walkthrough page is unavailable right now.")
-st.caption("Illustrative dots only — no real records are shown.")
+st.markdown(
+    "<a class='aas-cta' href='Story' target='_self'>"
+    "<span class='aas-cta-label'>▶ Open the anonymisation walkthrough</span>"
+    "<span class='aas-cta-note'>15 beats · illustrative dots only, no real records</span>"
+    "</a>",
+    unsafe_allow_html=True,
+)
 
 st.markdown("<div class='aas-section-label'>Tools</div>", unsafe_allow_html=True)
 

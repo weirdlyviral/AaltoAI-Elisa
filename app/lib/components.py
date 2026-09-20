@@ -69,8 +69,11 @@ def embedded_story(height: int = 900) -> None:
     # the assets below and remove the duplicate external tags.
     body = re.sub(r"<script\b[^>]*>.*?</script>", "", body, flags=re.S)
     tokens = (static_dir / "tokens.css").read_text()
+    # The @import cannot resolve inside a srcdoc iframe, so swap it for the
+    # same data-URI faces the Streamlit pages use. Dropping it, as this did
+    # before, left the story on Georgia and the system sans stack.
     styles = (story_dir / "story.css").read_text().replace(
-        '@import url("../vendor/fonts/fonts.css");', ""
+        '@import url("../vendor/fonts/fonts.css");', theme.font_face_css()
     )
     d3 = (static_dir / "vendor" / "d3.v7.min.js").read_text()
     scrollama = (static_dir / "vendor" / "scrollama.min.js").read_text()

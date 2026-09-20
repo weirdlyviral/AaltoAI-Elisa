@@ -203,6 +203,21 @@ Quirks that shape everything:
   and the DP bound, drives the scoreboard). Cross-referenced, not reconciled.
 - **M6 red team dropped for time:** the GDPR RULES and COMPLY story layer is the
   review focus; no red-team page or release artefacts are carried on this branch.
+- **M6 UI polish (branch `m6-ui-polish`, off main): DONE, not pushed.** Fixes to the
+  deployed app. The chrome bugs were all dead selectors: `collapsedControl` and
+  `stAppViewBlockContainer` do not exist in Streamlit 1.39 (they are
+  `stSidebarCollapsedControl` and `stMainBlockContainer`), so the stray chevron and
+  the 6rem header band were never actually being hidden. The walkthrough was not
+  broken but mis-sized - a vh-based sticky layout inside a fixed 1500px iframe centres
+  its content below the fold; the iframe is now forced to 100vh with the parent's
+  scroll locked. Fonts never loaded when hosted (srcs pointed at 127.0.0.1:8765, and
+  `embedded_story` stripped the story's @import outright), so `theme.font_face_css()`
+  now inlines both woff2 as data URIs for the pages AND the iframe. Story copy cut
+  from 26 beats to 15, bodies to 2-3 sentences, `lens` dropped everywhere and the
+  technique `chip` kept. Home restyled in place (number-led stat cards, real CTA
+  button, nav active-state). Known pre-existing red test, untouched by this branch:
+  `test_no_colour_literal_outside_tokens_css` fails on two hard-coded colours in
+  `app/static/story/story.css` (also fails on main).
 - **M7 Pitch & submit.**
 
 Update this Status section whenever a milestone changes state.

@@ -187,5 +187,3 @@ if sel_list and isinstance(sel_list, list) and len(sel_list) > 0:
             st.rerun()
 
 st.caption("The ringed, larger point is the active configuration. Click any point to jump to it.")
-
-st.divider()

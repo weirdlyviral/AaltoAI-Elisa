@@ -18,15 +18,30 @@ theme.setup_page(
         show_header=False,
         show_footer=False,
 )
+# The story is a sticky scrollytelling layout sized in vh. It has to own the
+# whole viewport: in a fixed-height iframe taller than the window, its graphic
+# pane centres the law cards several hundred pixels below the fold, which is
+# what made this page look blank. The parent must not scroll either, so the
+# wheel reaches the iframe. (These are Streamlit 1.39 test ids; the previous
+# stAppViewBlockContainer rule matched nothing.)
 st.markdown(
         """<style>
-        [data-testid="stAppViewContainer"] > .main { padding-top: 0 !important; }
-        [data-testid="stAppViewBlockContainer"] {
+        html, body,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"] { overflow: hidden !important; }
+        [data-testid="stMainBlockContainer"] {
             max-width: none !important;
             padding: 0 !important;
         }
-        [data-testid="stDecoration"] { display: none !important; }
+        [data-testid="stVerticalBlock"] { gap: 0 !important; }
+        [data-testid="stMainBlockContainer"] iframe,
+        [data-testid="stIFrame"],
+        iframe[title="st.iframe"] {
+            height: 100vh !important;
+            width: 100% !important;
+            border: 0 !important;
+        }
         </style>""",
         unsafe_allow_html=True,
 )
-components.embedded_story(height=1500)
+components.embedded_story(height=900)
