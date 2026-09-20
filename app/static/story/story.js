@@ -39,9 +39,9 @@
       chapter: 0,
       headline: "What we have to prove",
       body:
-        "Elisa's brief asks whether we can demonstrate resistance to isolation, linkage and " +
-        "inference. Those three questions are the test for everything that follows — evidence " +
-        "against a defined recipient, not a promise that every possible attacker has disappeared.",
+        "The challenge: releasing sensitive network data without destroying its value. " +
+        "Our approach: instead of pursuing impossible absolute anonymity, we build a recipient-side " +
+        "threat model to rigorously measure resistance against isolation, linkage, and inference.",
       criteriaTiles: true,
       lens: null,
       chip: null,
@@ -103,7 +103,7 @@
         "back to the province when too few people share one, and minute-level timestamps " +
         "round into {time_bucket}-minute windows. Everybody now sits in a bucket of place and " +
         "time rather than at a point.",
-      stat: { value: "{time_bucket} min", label: "time resolution, down from one minute" },
+      stat: { value: "0", label: "exact timestamps or coordinates retained" },
       chip: "anonymise.py · area tokens + {time_bucket}-min buckets",
       lens: null,
     },
@@ -115,7 +115,7 @@
         "Before anything is published we count distinct subscribers — people, not rows — in " +
         "every bucket. Where at least k = {k} of them share one, no individual inside can be " +
         "picked out on the published attributes: the rings turn green.",
-      stat: { value: "{k}+", label: "distinct subscribers behind every green ring" },
+      stat: { value: "{k}+", label: "distinct subscribers behind every green ring", measured: false },
       chip: "anonymise.py · k-anonymity on distinct subscribers",
       lens: null,
     },
@@ -137,9 +137,9 @@
       headline: "Publish counts, not people",
       body:
         "Each surviving bucket collapses into one line: how many people were in it, and the " +
-        "spread of their measurements. An exact count still leaks membership, so every " +
-        "published count gets calibrated Laplace noise at ε = {epsilon}.",
-      stat: { value: "ε = {epsilon}", label: "privacy budget on every published count" },
+        "spread of their measurements. An exact count still leaks membership, so we apply " +
+        "Differential Privacy. Every published count gets calibrated Laplace noise at ε = {epsilon}.",
+      stat: { value: "ε = {epsilon}", label: "privacy budget on every published count", measured: false },
       chip: "anonymise.py · Laplace, scale {dp_scale}, seed 42",
       lens: null,
     },
@@ -2528,7 +2528,7 @@
       if (step.stat) {
         // A stat whose template pulls a placeholder out of story_data.json is
         // a measured figure; one written as a plain literal is just prose.
-        var measured = /\{\w+\}/.test(step.stat.value) || /\{\w+\}/.test(step.stat.label);
+        var measured = step.stat.measured !== false && (/\{\w+\}/.test(step.stat.value) || /\{\w+\}/.test(step.stat.label));
         html +=
           '<div class="step-stat"><div class="step-stat-value">' +
           fillTemplate(step.stat.value, display) +

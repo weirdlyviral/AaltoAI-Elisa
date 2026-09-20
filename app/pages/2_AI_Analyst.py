@@ -9,7 +9,14 @@ if str(_APP_DIR) not in sys.path:
 
 import streamlit as st
 
-from lib import components, data, theme
+from lib import components, data, theme, agent
+import importlib
+importlib.reload(agent)
+try:
+    from src import safety
+    importlib.reload(safety)
+except ImportError:
+    pass
 from lib.agent import run_agent, RefusedQuery
 
 theme.setup_page("AI Analyst", icon="🤖")
