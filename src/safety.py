@@ -513,7 +513,6 @@ def _append_jsonl(record: dict[str, Any], path: Path | None = None) -> None:
     path = Path(path) if path is not None else Path(LLM_LOG_PATH)
     line = json.dumps(record, ensure_ascii=False, default=str)
     findings = check_text(line, str(path))
-    with open("outputs/llm_debug.txt", "w") as dbg: dbg.write(line)
     if findings:
         raise LeakError(f"Refusing to log LLM call: {len(findings)} finding(s).")
     path.parent.mkdir(parents=True, exist_ok=True)

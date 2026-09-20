@@ -6,6 +6,7 @@ pytest tmp_path, so no real data is ever touched.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -329,7 +330,11 @@ def test_llm_gateway_logs_a_clean_call(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert record["purpose"] == "unit_test"
     assert record["endpoint_host"] == "example.invalid"
     assert record["model"] == "test-model"
-    assert len(record["prompt_sha256"]) == 64
+    # The digest is logged in 8-char groups: an unbroken hexdigest can contain a
+    # run of 10+ digits by chance and would trip the leak guard on its own log line.
+    assert record["prompt_sha256"].replace("-", "") == hashlib.sha256(
+        b"Reply with OK"
+    ).hexdigest()
 
 
 # --------------------------------------------------------------------------- #
