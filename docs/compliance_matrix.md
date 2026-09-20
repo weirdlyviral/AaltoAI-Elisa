@@ -12,7 +12,7 @@ Generated from `app/lib/compliance.py`; the COMPLY chapter uses the same rows.
 | Anonymisation is itself processing (EDPB para 38) | Raw data only in a secure folder; the app never reads it; the LLM never saw a row; every LLM call audited | **DOCUMENTED** · `outputs/llm_calls.jsonl`, `src/safety.py` |
 | Honest labelling (EDPB para 40) | Never 'fully anonymous'; residual risks named | **DOCUMENTED** · `docs/risk_assessment.md` |
 | Documentation retained (EDPB para 41) | Row-level transformation docs, decision log | **DOCUMENTED** · `docs/transformations.md`, `outputs/release_decisions.jsonl` |
-| Humans decide (responsible AI) | Mistral proposes field classes, a human approves with logged overrides; release approval in the Trade-off Explorer | **DOCUMENTED** · `outputs/classification.json` |
+| Humans decide (responsible AI) | Mistral proposes field classes, a human approves with logged overrides | **DOCUMENTED** · `outputs/classification.json` |
 | Re-assess over time (EDPB para 35) | Reproducible pipeline + tests; re-run as data and techniques change | **DOCUMENTED** · `tests/` |
 
 | **Elisa's call** | The legal basis for running the anonymisation, and whether network-quality analytics fits the permitted purposes. We provide the evidence; the lawful-basis decision is the controller's. | **DECISION** · Elisa legal team |

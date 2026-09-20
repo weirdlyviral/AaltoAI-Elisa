@@ -62,7 +62,7 @@ def rows(values: dict | None = None) -> list[dict]:
         },
         {
             "requirement": "Humans decide (responsible AI)",
-            "control": "Mistral proposes field classes, a human approves with logged overrides; release approval in the Trade-off Explorer",
+            "control": "Mistral proposes field classes, a human approves with logged overrides",
             "evidence_tag": "DOCUMENTED",
             "evidence": ["outputs/classification.json"],
         },
