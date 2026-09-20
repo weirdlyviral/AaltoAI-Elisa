@@ -140,6 +140,18 @@ def setup_page(
         _render_footer_badge()
 
 
+def page_link(path: str, label: str) -> None:
+    """st.page_link, with a plain-link fallback.
+
+    AppTest runs a page as its own entrypoint, so sibling pages are unknown to
+    it and st.page_link raises; the app itself always takes the first branch.
+    """
+    try:
+        st.page_link(path, label=label)
+    except st.errors.StreamlitPageNotFoundError:
+        st.markdown(f"[{label}]({path})")
+
+
 def _render_nav(active: str = "") -> None:
     """The top row. The current page renders as a marker, not as a link."""
 
@@ -149,10 +161,7 @@ def _render_nav(active: str = "") -> None:
                 f"<span class='aas-nav-current'>{label}</span>", unsafe_allow_html=True
             )
             return
-        try:
-            st.page_link(path, label=label)
-        except st.errors.StreamlitPageNotFoundError:
-            st.markdown(f"[{label}]({path})")
+        page_link(path, label)
 
     nav = st.columns([2, 1.25, 1.25, 1.25, 2], gap="small")
     for column, (path, label) in zip(nav[1:4], NAV_PAGES):

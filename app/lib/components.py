@@ -68,6 +68,10 @@ def embedded_story(height: int = 900) -> None:
     # Streamlit's srcdoc iframe those URLs point at the app route, so bundle
     # the assets below and remove the duplicate external tags.
     body = re.sub(r"<script\b[^>]*>.*?</script>", "", body, flags=re.S)
+    # The standalone story carries its own "Home" link. Streamlit sandboxes
+    # this iframe without allow-top-navigation, so a target="_top" anchor is
+    # silently ignored; the Story page renders a real st.page_link instead.
+    body = re.sub(r"<a class=\"story-close\".*?</a>", "", body, flags=re.S)
     tokens = (static_dir / "tokens.css").read_text()
     # The @import cannot resolve inside a srcdoc iframe, so swap it for the
     # same data-URI faces the Streamlit pages use. Dropping it, as this did

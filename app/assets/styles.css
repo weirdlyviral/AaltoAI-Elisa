@@ -53,8 +53,8 @@ body,
   padding-top: 1.4rem;
 }
 
-/* Navigation lives in the centered top row; the rail remains available for
-   page-specific controls such as the Explorer configuration. */
+/* Navigation lives in the centered top row, and no page uses the sidebar:
+   the Explorer's controls are a panel in the page itself. */
 [data-testid="stSidebarNav"] {
   display: none !important;
 }
@@ -97,28 +97,20 @@ body,
   padding: 0.45rem 0.75rem;
 }
 
-.aas-sidebar-kicker {
+/* Section label inside the Explorer's in-page control panel. */
+.aas-control-kicker {
   color: var(--accent);
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.13em;
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.5rem;
 }
 
-.aas-sidebar-kicker-spaced {
+/* The second group in the same panel: a rule separates it from the first. */
+.aas-control-kicker-spaced {
   border-top: 1px solid var(--border-soft);
-  margin-top: 1.2rem;
-  padding-top: 1rem;
-}
-
-.aas-control-kicker {
-  border-top: 1px solid var(--border-soft);
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  margin: 1.2rem 0 0.4rem;
-  padding-top: 0.8rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
 }
 
 h1,

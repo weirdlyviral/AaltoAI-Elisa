@@ -13,7 +13,7 @@ import streamlit as st
 
 from lib import components, data, theme
 
-theme.setup_page("Trade-off Explorer", icon="🎛️", show_sidebar=True)
+theme.setup_page("Trade-off Explorer", icon="🎛️")
 
 
 grid, is_mock = data.load_tradeoff_grid()
@@ -57,14 +57,30 @@ metric_help_texts = {
     "A5 Differencing Recovery (Aggregate)": "Risk of recovering suppressed cells by differencing overlapping aggregate queries.",
     "A6 Inference Accuracy (Aggregate)": "Membership inference risk on the aggregate data. 50% is random guessing."
 }
-with st.sidebar:
-    st.markdown("<div class='aas-sidebar-kicker'>RELEASE CONFIGURATION</div>", unsafe_allow_html=True)
-    st.session_state.slider_k = st.select_slider("k", options=ks, value=st.session_state.slider_k)
-    st.session_state.slider_tb = st.select_slider("time bucket (min)", options=time_buckets, value=st.session_state.slider_tb)
-    st.session_state.slider_am = st.selectbox("area mode", options=area_modes, index=area_modes.index(st.session_state.slider_am) if st.session_state.slider_am in area_modes else 0)
-    st.session_state.slider_eps = st.select_slider("epsilon", options=epsilons, value=st.session_state.slider_eps)
-    st.markdown("<div class='aas-sidebar-kicker aas-sidebar-kicker-spaced'>VIEW</div>", unsafe_allow_html=True)
-    selected_y_label = st.selectbox("Risk metric", options=list(y_axis_options.keys()))
+# The controls sit in the page, not in the sidebar rail: they are the whole
+# point of this page, so there is nothing to gain from collapsing them away.
+with st.container(border=True):
+    st.markdown(
+        "<div class='aas-control-kicker'>RELEASE CONFIGURATION</div>",
+        unsafe_allow_html=True,
+    )
+    col_k, col_tb, col_am, col_eps = st.columns(4)
+    with col_k:
+        st.session_state.slider_k = st.select_slider("k", options=ks, value=st.session_state.slider_k)
+    with col_tb:
+        st.session_state.slider_tb = st.select_slider("time bucket (min)", options=time_buckets, value=st.session_state.slider_tb)
+    with col_am:
+        st.session_state.slider_am = st.selectbox("area mode", options=area_modes, index=area_modes.index(st.session_state.slider_am) if st.session_state.slider_am in area_modes else 0)
+    with col_eps:
+        st.session_state.slider_eps = st.select_slider("epsilon", options=epsilons, value=st.session_state.slider_eps)
+
+    st.markdown(
+        "<div class='aas-control-kicker aas-control-kicker-spaced'>VIEW</div>",
+        unsafe_allow_html=True,
+    )
+    col_view, _ = st.columns([1, 3])
+    with col_view:
+        selected_y_label = st.selectbox("Risk metric", options=list(y_axis_options.keys()))
 selected_y_key = y_axis_options[selected_y_label]
 
 

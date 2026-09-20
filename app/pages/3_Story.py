@@ -34,6 +34,15 @@ st.markdown(
             padding: 0 !important;
         }
         [data-testid="stVerticalBlock"] { gap: 0 !important; }
+        /* The back link the story's own anchor cannot provide inside the
+           sandboxed iframe. Pinned where that anchor used to sit. */
+        [data-testid="stPageLink"] {
+            position: fixed;
+            top: 0.2rem;
+            right: 0.9rem;
+            width: auto !important;
+            z-index: 100;
+        }
         [data-testid="stMainBlockContainer"] iframe,
         [data-testid="stIFrame"],
         iframe[title="st.iframe"] {
@@ -44,4 +53,5 @@ st.markdown(
         </style>""",
         unsafe_allow_html=True,
 )
+theme.page_link("Home.py", "← Home")
 components.embedded_story(height=900)
