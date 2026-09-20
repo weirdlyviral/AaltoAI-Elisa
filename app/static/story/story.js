@@ -550,6 +550,39 @@
     };
   }
 
+  // The publish beat stacks each published cell's dots inside the bar drawn
+  // for that cell, so BAR_W and BAR_COLS are shared with drawBars below.
+  var BAR_W = 34;
+  var BAR_COLS = 4;
+
+  /** Every dot's slot inside its own (row, col) cell. Memoised on the scene:
+     the pile has to keep the same shape across renders, not reshuffle. */
+  function cellSlots(scene) {
+    if (scene.cellSlotByDot) return scene.cellSlotByDot;
+    var filled = {};
+    var slots = {};
+    scene.dots.forEach(function (dot) {
+      var cell = dot.rowIndex + "-" + dot.colIndex;
+      filled[cell] = (filled[cell] || 0) + 1;
+      slots[dot.id] = filled[cell] - 1;
+    });
+    scene.cellSlotByDot = slots;
+    return slots;
+  }
+
+  function barPosition(dot, scene) {
+    var geom = cellGeometry(dot.rowIndex, dot.colIndex);
+    var count = scene.cellCounts[dot.rowIndex][dot.colIndex];
+    var height = (count / (scene.maxCellCount || 1)) * geom.maxHeight;
+    var slot = cellSlots(scene)[dot.id] || 0;
+    var rows = Math.max(1, Math.ceil(count / BAR_COLS));
+    var step = height / rows;
+    return {
+      x: geom.cx - BAR_W / 2 + ((slot % BAR_COLS) + 0.5) * (BAR_W / BAR_COLS),
+      y: geom.baseline - (Math.floor(slot / BAR_COLS) + 0.5) * step,
+    };
+  }
+
   // ---------------------------------------------------------- state machine
 
   function stateFor(key, scene, data, colors) {
@@ -736,7 +769,21 @@
         ring = "none";
         opacity = 0.25;
       }
-      if (state.bars || state.attacksLit || state.scoreboard || state.utilityBars) {
+      if (state.bars) {
+        // A bar IS the pile of people, so the cell's dots pack into its
+        // footprint rather than being swapped out for an abstract rectangle.
+        // Cells below k lost their dots a beat earlier, at the suppression
+        // step; the quiet closing beats keep the grid as a calm backdrop.
+        ring = "none";
+        if (cellCount >= data.k && !state.quiet) {
+          pos = barPosition(dot, scene);
+          radius = 2.6;
+          opacity = 0.9;
+        } else {
+          opacity = 0;
+        }
+      }
+      if (state.attacksLit || state.scoreboard || state.utilityBars) {
         opacity = 0;
         ring = "none";
       }
@@ -1439,7 +1486,7 @@
       }
     }
 
-    var barW = 34;
+    var barW = BAR_W;
 
     gfx.layers.bar
       .selectAll("rect.cell-bar")
@@ -1561,17 +1608,85 @@
     });
   }
 
+  // The three EDPB criteria the opening beat introduces, in the order they
+  // should read here. Membership is still driven entirely by each attack's
+  // `criterion` field below - only the group order and label are fixed.
+  var ATTACK_CRITERIA = [
+    { key: "no_record_isolation", label: "Isolation" },
+    { key: "no_linkage", label: "Linkage" },
+    { key: "no_inference", label: "Inference" },
+  ];
+
   function drawAttackPanel(gfx, state, data, duration) {
     var attacks = state.attacksLit ? data.attacks || [] : [];
-    var rowH = 88;
+    var rowH = 76;
+    var headerH = 24;
+    var groupGap = 14;
     var top = 66;
     var left = 54;
     var right = VB_W - 54;
+    var chipW = 74;
+    var chipGutter = 14;
+    var textMaxWidth = right - chipW - 16 - chipGutter - (left + 52);
+
+    // Bucket the attacks under their criterion, in the fixed group order,
+    // and stack headers + cards into a single y per row/header.
+    var headers = [];
+    var laidOut = [];
+    var y = top;
+    ATTACK_CRITERIA.forEach(function (group) {
+      var members = attacks.filter(function (item) {
+        return item.criterion === group.key;
+      });
+      if (!members.length) return;
+      if (laidOut.length) y += groupGap;
+      headers.push({ key: "hdr-" + group.key, label: group.label, y: y });
+      y += headerH;
+      members.forEach(function (item) {
+        laidOut.push({ item: item, y: y });
+        y += rowH;
+      });
+    });
+
+    gfx.layers.panel
+      .selectAll("text.attack-group-header")
+      .data(headers, function (d) {
+        return d.key;
+      })
+      .join(
+        function (enter) {
+          return enter
+            .append("text")
+            .attr("class", "attack-group-header")
+            .attr("x", left)
+            .attr("y", function (d) {
+              return d.y;
+            })
+            .text(function (d) {
+              return d.label;
+            })
+            .attr("opacity", 0)
+            .call(function (sel) {
+              sel.transition("panel").duration(duration).attr("opacity", 1);
+            });
+        },
+        function (update) {
+          return update
+            .transition("panel")
+            .duration(duration)
+            .attr("y", function (d) {
+              return d.y;
+            });
+        },
+        function (exit) {
+          return exit.transition("panel").duration(duration / 2).attr("opacity", 0).remove();
+        }
+      );
 
     var groups = gfx.layers.panel
       .selectAll("g.attack-card")
-      .data(attacks, function (item) {
-        return item.id;
+      .data(laidOut, function (d) {
+        return d.item.id;
       });
 
     groups.exit().transition("panel").duration(duration / 2).attr("opacity", 0).remove();
@@ -1586,9 +1701,10 @@
 
     var merged = entered.merge(groups);
 
-    merged.each(function (item, index) {
+    merged.each(function (d) {
       var group = d3.select(this);
-      var y = top + index * rowH;
+      var item = d.item;
+      var y = d.y;
       var lit = state.attacksLit.indexOf(item.id) >= 0;
 
       group.select("rect.attack-box")
@@ -1607,14 +1723,15 @@
       group.select("text.attack-name")
         .attr("x", left + 52)
         .attr("y", y + 27)
-        .text(item.name);
+        .text(item.name)
+        .call(fitText, textMaxWidth);
 
       group.select("text.attack-measured")
         .attr("x", left + 52)
         .attr("y", y + 49)
-        .text(item.measured);
+        .text(item.measured)
+        .call(fitText, textMaxWidth);
 
-      var chipW = 74;
       group.select("rect.attack-verdict-chip")
         .attr("x", right - chipW - 16)
         .attr("y", y + 16)
@@ -2112,14 +2229,48 @@
       return;
     }
     var rows = data.compliance_rows || [];
+    var measuredCount = rows.filter(function (row) {
+      return String(row.evidence_tag).toUpperCase() === "MEASURED";
+    }).length;
+    var documentedCount = rows.length - measuredCount;
     overlay.innerHTML =
-      '<div class="compliance-table"><div class="compliance-head"><span>Requirement</span><span>Our control</span><span>Evidence</span></div>' +
+      '<div class="compliance-summary">' +
+      '<div class="compliance-summary-count"><strong>' +
+      escapeHtml(data.controls_evidenced) +
+      '</strong><span>/ ' +
+      escapeHtml(data.controls_total) +
+      ' controls evidenced</span></div>' +
+      '<div class="compliance-summary-split">' +
+      '<span class="evidence-tag measured">' +
+      measuredCount +
+      ' measured</span>' +
+      '<span class="evidence-tag">' +
+      documentedCount +
+      ' documented</span>' +
+      "</div></div>" +
+      '<div class="compliance-grid">' +
       rows
         .map(function (row, index) {
-          return '<div class="compliance-row" style="--row-delay:' + index * 90 + 'ms"><span><i class="check-mark">✓</i>' + escapeHtml(row.requirement) + '</span><span>' + escapeHtml(row.control) + '</span><span><b class="evidence-tag ' + row.evidence_tag.toLowerCase() + '">' + escapeHtml(row.evidence_tag) + '</b> · ' + row.evidence.map(escapeHtml).join(", ") + '</span></div>';
+          return (
+            '<article class="compliance-card" style="--row-delay:' +
+            index * 70 +
+            'ms" title="' +
+            escapeHtml(row.evidence.join(", ")) +
+            '"><div class="compliance-card-head"><i class="check-mark">✓</i><b class="evidence-tag ' +
+            row.evidence_tag.toLowerCase() +
+            '">' +
+            escapeHtml(row.evidence_tag) +
+            "</b></div>" +
+            "<strong>" +
+            escapeHtml(row.requirement) +
+            "</strong><p>" +
+            escapeHtml(row.control) +
+            "</p></article>"
+          );
         })
         .join("") +
-      '<div class="compliance-call"><span><strong>Elisa\'s call</strong></span><span>The legal basis for running the anonymisation, and whether network-quality analytics fits the permitted purposes. We provide the evidence; the lawful-basis decision is the controller\'s.</span><span>DECISION · Elisa legal team</span></div></div>';
+      "</div>" +
+      '<div class="compliance-call"><strong>Elisa\'s call</strong><p>The legal basis for running the anonymisation, and whether network-quality analytics fits the permitted purposes. We provide the evidence; the lawful-basis decision is the controller\'s.</p><span>DECISION · Elisa legal team</span></div>';
   }
 
   function renderRealRelease(state, data) {

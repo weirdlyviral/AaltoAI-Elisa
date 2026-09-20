@@ -244,43 +244,81 @@ body {
   line-height: 1.45;
 }
 
-.compliance-table {
+.compliance-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.compliance-summary-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.compliance-summary-count strong {
+  font-family: var(--serif);
+  font-size: 1.9rem;
+  line-height: 1;
+  color: var(--fg);
+}
+
+.compliance-summary-count span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.compliance-summary-split {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.compliance-grid {
   display: grid;
-  gap: 0;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
   min-width: 0;
 }
 
-.compliance-head,
-.compliance-row,
-.compliance-call {
-  display: grid;
-  grid-template-columns: 1.05fr 1.3fr 0.9fr;
-  gap: 0.75rem;
+.compliance-card {
+  min-width: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--panel-2);
+  padding: 0.55rem 0.65rem;
+  animation: chapter-card-in 0.45s ease var(--row-delay) both;
+}
+
+.compliance-card-head {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
 }
 
-.compliance-head {
-  padding: 0 0.6rem 0.45rem;
-  color: var(--muted);
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.compliance-row,
-.compliance-call {
-  border-top: 1px solid var(--border-soft);
-  padding: 0.48rem 0.6rem;
-  color: var(--fg-dim);
-  font-size: 0.68rem;
-  line-height: 1.25;
-  animation: chapter-card-in 0.5s ease var(--row-delay) both;
-}
-
-.compliance-row > span:first-child,
-.compliance-call > span:first-child {
+.compliance-card strong {
+  display: block;
   color: var(--fg);
-  font-weight: 600;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.18rem;
+}
+
+.compliance-card p {
+  margin: 0;
+  color: var(--fg-dim);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .check-mark {
@@ -297,26 +335,50 @@ body {
 }
 
 .evidence-tag {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ring-safe) 14%, transparent);
   color: var(--ring-safe);
-  font-size: 0.61rem;
+  font-size: 0.58rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .evidence-tag.measured {
+  background: color-mix(in srgb, var(--net-5g) 16%, transparent);
   color: var(--net-5g);
 }
 
 .compliance-call {
-  margin-top: 0.45rem;
+  margin-top: 0.7rem;
   border: 1px solid rgba(230, 159, 0, 0.5);
   border-left: 3px solid var(--net-5g);
+  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
   color: var(--fg-dim);
+  font-size: 0.68rem;
+  line-height: 1.3;
 }
 
-.compliance-call > span:last-child {
+.compliance-call strong {
+  display: block;
+  color: var(--fg);
+  font-size: 0.76rem;
+  margin-bottom: 0.2rem;
+}
+
+.compliance-call p {
+  margin: 0 0 0.35rem;
+}
+
+.compliance-call span {
   color: var(--net-5g);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 @keyframes chapter-card-in {
@@ -385,11 +447,10 @@ body {
   justify-content: center;
   text-align: center;
   padding: 2.5rem;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--bg) 93%, transparent),
-    color-mix(in srgb, var(--bg) 82%, transparent)
-  );
+  /* Opaque. It used to be a translucent gradient, which was invisible while
+     the page opened mid-scroll; now that the story owns the viewport it opens
+     at scroll 0 and the first beat's cards showed straight through it. */
+  background: var(--panel);
   transition: opacity 0.7s ease, visibility 0.7s ease;
 }
 
@@ -509,8 +570,12 @@ body {
   fill: var(--ring-risk);
 }
 
+/* Outlined, not solid: the cell's dots are packed inside this rectangle, so
+   the reader sees the group and the published bar as one object. */
 .cell-bar {
-  fill: var(--accent);
+  fill: color-mix(in srgb, var(--accent) 10%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.4;
 }
 
 .noise-band {
@@ -526,6 +591,15 @@ body {
 
 .attack-box.is-lit {
   stroke: var(--border);
+}
+
+.attack-group-header {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 13);
+  font-family: var(--sans);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .attack-id {
