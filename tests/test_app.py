@@ -119,7 +119,196 @@ def test_query_aggregate_accepts_cell_above_threshold(monkeypatch):
     monkeypatch.setattr(agent.data, "load_aggregate_release", lambda: ok)
 
     result = agent.query_aggregate(filters={}, group_by=["province"], metrics=["tp_dl_avg_median"])
-    assert list(result["n_subscribers"]) == [50]
+    assert list(result[agent.COUNT_COLUMN]) == [50]
+    assert "n_subscribers" not in result.columns
+
+
+@pytest.fixture
+def release(monkeypatch):
+    """A two-cell stand-in for the aggregate release, with a datetime bucket."""
+    from app.lib import agent
+
+    df = pd.DataFrame(
+        {
+            "time_bucket": pd.to_datetime(["2027-04-28 12:00", "2027-04-28 12:15"]),
+            "province": ["Uusimaa", "Uusimaa"],
+            "radio_access_type": ["4G", "5G"],
+            "application_category": ["Web", "Web"],
+            "n_subscribers": [50, 70],
+            "tp_dl_avg_median": [0.25, 0.75],
+        }
+    )
+    monkeypatch.setattr(agent.data, "load_aggregate_release", lambda: df)
+    return agent
+
+
+def test_time_bucket_leaves_the_tool_as_hh_mm(release):
+    """Epoch millis are a 13-digit run: safety.check_text flags them and the
+    next llm_gateway call is refused, so every time-grouped question died."""
+    import re
+
+    from src import safety
+
+    result = release.query_aggregate({}, ["time_bucket"], ["tp_dl_avg_median"])
+    payload = result.round(4).to_json(orient="records")
+
+    assert list(result["time_bucket"]) == ["12:00", "12:15"]
+    assert not re.search(r"\d{10,}", payload)
+    assert safety.check_text(payload, "test_agent_tool_result") == []
+
+
+def test_time_bucket_filter_accepts_the_string_the_model_sees(release):
+    result = release.query_aggregate({"time_bucket": "12:15"}, ["province"], [])
+    assert list(result[release.COUNT_COLUMN]) == [70]
+
+
+def test_unknown_metric_is_refused_not_dropped(release):
+    with pytest.raises(release.RefusedQuery, match="unknown metric"):
+        release.query_aggregate({}, ["province"], ["latency_median"])
+
+
+def test_n_subscribers_as_a_metric_does_not_raise_typeerror(release):
+    result = release.query_aggregate({}, ["province"], ["n_subscribers"])
+    assert list(result[release.COUNT_COLUMN]) == [120]
+
+
+def test_empty_selection_is_distinguished_from_suppression(release):
+    with pytest.raises(release.RefusedQuery, match="no rows matched"):
+        release.query_aggregate({"province": "Atlantis"}, ["radio_access_type"], [])
+
+
+def test_schema_prompt_names_the_real_columns_and_values(release):
+    schema = release.describe_schema()
+    assert "time_bucket" in schema and "12:00" in schema
+    assert "tp_dl_avg_median" in schema
+    assert "hour_of_day" not in schema
+
+
+def _agent_replying(release, monkeypatch, responses):
+    """Drive run_agent with canned LLM responses instead of a live gateway."""
+    calls = iter(responses)
+    monkeypatch.setattr(release, "_llm", lambda prompt, system, purpose: next(calls))
+    return release
+
+
+def test_run_agent_queries_then_answers(release, monkeypatch):
+    _agent_replying(
+        release,
+        monkeypatch,
+        [
+            '{"action": "query_aggregate", "filters": {}, '
+            '"group_by": ["radio_access_type"], "metrics": ["tp_dl_avg_median"]}',
+            '{"answer": "5G is faster."}',
+        ],
+    )
+    result = release.run_agent("analyst", "Which is faster?", history=[])
+
+    assert result["answer"].startswith("5G is faster.")
+    assert [c["status"] for c in result["tool_calls"]] == ["success"]
+
+
+def test_run_agent_feeds_a_refusal_back_so_the_model_can_retry(release, monkeypatch):
+    _agent_replying(
+        release,
+        monkeypatch,
+        [
+            '{"action": "query_aggregate", "filters": {}, "group_by": ["hour"], "metrics": []}',
+            '{"action": "query_aggregate", "filters": {}, '
+            '"group_by": ["time_bucket"], "metrics": ["tp_dl_avg_median"]}',
+            '{"answer": "Throughput rises over the hour."}',
+        ],
+    )
+    result = release.run_agent("analyst", "How does it change over the hour?", history=[])
+
+    assert [c["status"] for c in result["tool_calls"]] == ["error", "success"]
+    assert "Valid group_by columns" in result["tool_calls"][0]["error"]
+    assert result["answer"].startswith("Throughput rises over the hour.")
+
+
+def test_run_agent_drops_a_chart_whose_axes_are_not_in_the_result(release, monkeypatch):
+    """The old code plotted last_df whatever the model named, so a 'cannot
+    plot' answer still rendered a chart built from an unrelated query."""
+    _agent_replying(
+        release,
+        monkeypatch,
+        [
+            '{"action": "query_aggregate", "filters": {}, '
+            '"group_by": ["radio_access_type"], "metrics": ["tp_dl_avg_median"]}',
+            '{"answer": "Cannot plot that.", "plot_type": "line", '
+            '"x_axis": "hour", "y_axis": "tp_dl_avg_median"}',
+        ],
+    )
+    result = release.run_agent("analyst", "Plot it over time", history=[])
+    assert "chart" not in result
+
+
+def test_run_agent_charts_the_tools_own_numbers(release, monkeypatch):
+    _agent_replying(
+        release,
+        monkeypatch,
+        [
+            '{"action": "query_aggregate", "filters": {}, '
+            '"group_by": ["time_bucket"], "metrics": ["tp_dl_avg_median"]}',
+            '{"answer": "Here it is.", "plot_type": "line", '
+            '"x_axis": "time_bucket", "y_axis": "tp_dl_avg_median"}',
+        ],
+    )
+    result = release.run_agent("analyst", "Plot throughput over the hour", history=[])
+
+    chart = result["chart"]
+    assert chart["mark"] == "line"
+    assert [row["time_bucket"] for row in chart["data"]["values"]] == ["12:00", "12:15"]
+
+
+def test_run_agent_does_not_repeat_the_live_question_from_history(release, monkeypatch):
+    seen = {}
+
+    def capture(prompt, system, purpose):
+        seen["prompt"] = prompt
+        return '{"answer": "ok"}'
+
+    monkeypatch.setattr(release, "_llm", capture)
+    history = [{"role": "user", "content": "Which is faster?"}]
+    release.run_agent("analyst", "Which is faster?", history=history)
+
+    assert seen["prompt"].count("Which is faster?") == 1
+
+
+def release_caveat():
+    from app.lib import agent
+
+    return agent.CAVEAT
+
+
+def test_run_agent_appends_the_caveat_when_the_model_forgets_it(release, monkeypatch):
+    _agent_replying(release, monkeypatch, ['{"answer": "5G is faster."}'])
+    result = release.run_agent("analyst", "Which is faster?", history=[])
+
+    assert result["answer"].startswith("5G is faster.")
+    assert result["answer"].endswith(release.CAVEAT)
+
+
+def test_run_agent_does_not_duplicate_a_caveat_the_model_included(release, monkeypatch):
+    _agent_replying(
+        release, monkeypatch, ['{"answer": "5G is faster. ' + release_caveat() + '"}']
+    )
+    result = release.run_agent("analyst", "Which is faster?", history=[])
+    assert result["answer"].count("Caveat:") == 1
+
+
+def test_count_column_requested_as_a_metric_is_ignored(release):
+    result = release.query_aggregate({}, ["province"], [release.COUNT_COLUMN])
+    assert list(result.columns) == ["province", release.COUNT_COLUMN]
+
+
+def test_run_agent_reports_a_gateway_failure_instead_of_raising(release, monkeypatch):
+    def boom(prompt, system, purpose):
+        raise RuntimeError("endpoint unreachable")
+
+    monkeypatch.setattr(release, "_llm", boom)
+    result = release.run_agent("analyst", "anything", history=[])
+
+    assert "LLM Gateway Error" in result["answer"]
 
 
 @pytest.mark.parametrize("page_path", PAGE_FILES, ids=lambda p: p.name)

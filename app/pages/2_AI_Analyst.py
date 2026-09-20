@@ -9,22 +9,16 @@ if str(_APP_DIR) not in sys.path:
 
 import streamlit as st
 
-from lib import components, data, theme, agent
-import importlib
-importlib.reload(agent)
-try:
-    from src import safety
-    importlib.reload(safety)
-except ImportError:
-    pass
-from lib.agent import run_agent, RefusedQuery
+from lib import theme
+from lib.agent import run_agent
 
 theme.setup_page("AI Analyst", icon="🤖")
 st.write(
     "Ask natural language questions about the aggregate network performance. "
-    "The AI agent writes and executes secure pandas queries against the anonymised "
-    "aggregate release to answer you. It cannot access raw data and is blocked "
-    "from seeing any cell with fewer than 10 subscribers."
+    "The agent has one tool: a fixed group-and-filter query over the published "
+    "aggregate release. It has no path to the raw data, and the release it reads "
+    "already carries no cell below 10 subscribers \u2014 the floor is a property of "
+    "the release, not a filter applied here."
 )
 
 if "messages" not in st.session_state:

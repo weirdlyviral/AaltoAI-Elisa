@@ -201,6 +201,30 @@ Quirks that shape everything:
   **Open: two rule systems for "releasable"** - `docs/privacy_thresholds.md`
   (fixed ceilings, drives the explorer) vs `app/lib/verdicts.py` (relative to 1/k
   and the DP bound, drives the scoreboard). Cross-referenced, not reconciled.
+- **M6 AI Analyst hardened (branch `m6-analyst-fixes`): DONE.** Verified live against
+  the Verda endpoint, then fixed what the verification broke on. `time_bucket` left
+  the tool as epoch millis, so `safety.check_text` flagged `long_digit_run` and
+  refused the NEXT gateway call - every time-grouped question died with "LLM Gateway
+  Error"; datetimes are now `HH:MM` strings. The system prompt listed 5 metrics and
+  no group_by columns, so the model guessed `hour`/`hour_of_day` and invented units
+  ("0.05 Gbps" then "51.6 Mbps" for the same field); it is now built by
+  `agent.describe_schema()` from the parquet itself, and told that throughput/RTT/
+  HTTP-response-time units are UNDOCUMENTED and must be reported bare. The summed
+  count is renamed `n_subscriber_cells` (grouping by `time_bucket` summed to 712,513
+  against 199,195 actual subscribers) and the model is told never to call it a
+  headcount. Unknown metrics are refused instead of silently dropped; an empty
+  selection is distinguished from a suppressed one; `n_subscribers`/`n_subscriber_cells`
+  as a metric no longer raises `TypeError`. Charts are dropped unless the axes are
+  columns of the last result (the old code plotted an unrelated query under a
+  "cannot plot" answer). Repeated identical calls are refused and the final step
+  forces an answer (softening the old "answer now" push made it loop 6 times);
+  the caveat line is appended in code rather than trusted to the model; tool results
+  are prefixed with the filters that produced them (it was claiming "in Uusimaa"
+  for national queries). `importlib.reload` dev hacks removed from the page. 26 new
+  tests in `tests/test_app.py` (159 pass; the pre-existing red
+  `test_no_colour_literal_outside_tokens_css` is untouched and also fails on main).
+  Still open: no offline fallback, so a Verda outage during the pitch shows a bare
+  gateway error.
 - **M6 red team dropped for time:** the GDPR RULES and COMPLY story layer is the
   review focus; no red-team page or release artefacts are carried on this branch.
 - **M6 UI polish (branch `m6-ui-polish`, off main): DONE, not pushed.** Fixes to the
