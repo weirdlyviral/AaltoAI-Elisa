@@ -1254,6 +1254,25 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* States the attacker model the whole grid is scored under. */
+.score-header.is-caption {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 13);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* The record release is shown for comparison, not recommended: its column
+   recedes so the eye lands on the release we ship. */
+.score-header.is-muted {
+  opacity: 0.55;
+}
+
+.score-chip.is-muted,
+.score-chip-text.is-muted {
+  opacity: 0.5;
+}
+
 .counterfactual-box {
   fill: color-mix(in srgb, var(--ring-risk) 7%, transparent);
   stroke: color-mix(in srgb, var(--ring-risk) 35%, transparent);

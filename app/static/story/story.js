@@ -159,13 +159,14 @@
     {
       key: "scoreboard",
       chapter: 5,
-      headline: "The scoreboard, both ways",
+      headline: "The scoreboard",
       body:
-        "Against our defined recipient — an Elisa product team with no raw access and no " +
-        "identity data — all three criteria hold. Under the stricter simplified approach the " +
-        "row-level release fails on outliers, while the aggregate release we actually ship " +
-        "holds, with one named residual.",
-      stat: { value: "{criteria_met} / {criteria_total}", label: "criteria met by the aggregate release, both approaches" },
+        "Scored against an attacker stronger than our defined recipient: the row-level " +
+        "release fails, the aggregate release we ship holds.",
+      stat: {
+        value: "{criteria_met} / {criteria_total}",
+        label: "criteria met by the aggregate release — one of them a named residual",
+      },
       chip: "verdicts.py · rules mirrored in risk_assessment.md",
       lens: null,
     },
@@ -1815,20 +1816,13 @@
   function drawScoreboard(gfx, state, data, duration) {
     var rows = state.scoreboard ? data.criteria || [] : [];
     var left = 34;
-    // Two releases, each scored under both attacker models.
+    // One attacker model on the slide, not two. The contextual model - our
+    // defined recipient - passes everything on both releases, so it is the
+    // stricter "simplified" model that carries the decision. Both models stay
+    // in verdicts.py and in docs/risk_assessment.md, where there is room.
     var columns = [
-      { key: "record_contextual", x: 300, group: 0, text: "contextual" },
-      { key: "record_simplified", x: 400, group: 0, text: "simplified" },
-      { key: "aggregate_contextual", x: 530, group: 1, text: "contextual" },
-      { key: "aggregate_simplified", x: 638, group: 1, text: "simplified" },
-    ];
-    var groups = [
-      { key: "g0", x: 350, text: (data.criteria_columns || [{}])[0].label || "Record" },
-      {
-        key: "g1",
-        x: 584,
-        text: ((data.criteria_columns || [])[1] || {}).label || "Aggregate",
-      },
+      { key: "record_simplified", x: 452, title: "Record", sub: "not shipped", muted: true },
+      { key: "aggregate_simplified", x: 600, title: "Aggregate", sub: "what we ship", muted: false },
     ];
     var top = 176;
     var rowH = 104;
@@ -1836,13 +1830,33 @@
     var header = state.scoreboard
       ? columns
           .map(function (column) {
-            return { key: "sub-" + column.key, x: column.x, text: column.text, sub: true };
+            return {
+              key: "sub-" + column.key,
+              x: column.x,
+              text: column.sub,
+              sub: true,
+              muted: column.muted,
+            };
           })
           .concat(
-            groups.map(function (group) {
-              return { key: group.key, x: group.x, text: group.text, sub: false };
+            columns.map(function (column) {
+              return {
+                key: "head-" + column.key,
+                x: column.x,
+                text: column.title,
+                sub: false,
+                muted: column.muted,
+              };
             })
           )
+          .concat([
+            {
+              key: "caption",
+              x: left,
+              text: "Verdicts under an attacker stronger than our defined recipient",
+              caption: true,
+            },
+          ])
       : [];
 
     gfx.layers.panel
@@ -1855,15 +1869,23 @@
           return enter
             .append("text")
             .attr("class", function (item) {
-              return "score-header" + (item.sub ? " is-sub" : "");
+              return (
+                "score-header" +
+                (item.sub ? " is-sub" : "") +
+                (item.caption ? " is-caption" : "") +
+                (item.muted ? " is-muted" : "")
+              );
             })
             .attr("x", function (item) {
               return item.x;
             })
             .attr("y", function (item) {
+              if (item.caption) return top - 88;
               return item.sub ? top - 26 : top - 52;
             })
-            .attr("text-anchor", "middle")
+            .attr("text-anchor", function (item) {
+              return item.caption ? "start" : "middle";
+            })
             .text(function (item) {
               return item.text;
             })
@@ -1930,15 +1952,20 @@
 
       columns.forEach(function (column) {
         var cell = item[column.key] || {};
-        var chipW = 88;
+        var chipW = 104;
+        var muted = column.muted ? " is-muted" : "";
         group.select("rect.chip-" + column.key)
           .attr("x", column.x - chipW / 2)
           .attr("y", y - 14)
           .attr("width", chipW)
           .attr("height", 26)
           .attr("rx", 13)
-          .attr("class", "score-chip chip-" + column.key + " " + (VERDICT_CLASS[cell.status] || ""));
+          .attr(
+            "class",
+            "score-chip chip-" + column.key + " " + (VERDICT_CLASS[cell.status] || "") + muted
+          );
         group.select("text.text-" + column.key)
+          .attr("class", "score-chip-text text-" + column.key + muted)
           .attr("x", column.x)
           .attr("y", y + 4)
           .attr("text-anchor", "middle")
