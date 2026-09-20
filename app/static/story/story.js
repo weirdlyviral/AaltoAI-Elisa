@@ -2244,19 +2244,28 @@
       return;
     }
     if (step.criteriaTiles) {
+      // The opening beat carries the title too: a separate full-panel title
+      // card left most of the frame empty and cost the reader a whole screen
+      // before the three criteria appeared.
       var criteria = [
         ["No Record Isolation", "Can anyone be picked out?"],
         ["No Linkage", "Can records be joined to someone?"],
         ["No Inference", "Can something be learned about a specific person?"],
       ];
       overlay.innerHTML =
-        '<div class="criteria-quote">Can you clearly demonstrate resistance to isolation, linkage and inference risks?</div>' +
+        '<div class="opening">' +
+        '<h1 class="opening-title">How do you share network data without sharing people?</h1>' +
+        '<p class="opening-sub">One hour of Elisa\'s mobile network, turned into something a product ' +
+        'team can use \u2014 and measured to show how much re-identification risk is left.</p>' +
+        '<div class="opening-kicker">The three criteria we have to demonstrate resistance to</div>' +
         '<div class="criteria-tiles">' +
         criteria
           .map(function (item, index) {
             return '<article class="criteria-tile" style="--tile-delay:' + index * 120 + 'ms"><strong>' + item[0] + '</strong><span>' + item[1] + '</span></article>';
           })
           .join("") +
+        '</div>' +
+        '<div class="scroll-hint">Scroll to begin</div>' +
         '</div>';
       return;
     }
@@ -2595,7 +2604,6 @@
     gfx.k = data.k || 10;
     attachTooltip(gfx, scene);
 
-    var titleCard = document.getElementById("title-card");
     var activeIndex = 0;
 
     function render(stepIndex, animate) {
@@ -2610,14 +2618,6 @@
       renderPanelTag(state);
       renderRealRelease(state, data);
     }
-
-    // The title card belongs to the very top of the page, not to step 1:
-    // it fades the moment the reader scrolls and returns if they come back.
-    function syncTitleCard() {
-      titleCard.classList.toggle("is-hidden", window.scrollY > 60);
-    }
-    window.addEventListener("scroll", syncTitleCard, { passive: true });
-    syncTitleCard();
 
     // On phones the sticky graphic covers the top ~41% of the viewport, so the
     // step has to trigger lower down to land in the readable area.

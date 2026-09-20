@@ -212,14 +212,51 @@ body {
   line-height: 1.45;
 }
 
-.criteria-quote {
-  max-width: 42ch;
-  margin: 0 auto 1.2rem;
-  color: var(--fg-dim);
-  font-family: var(--serif);
-  font-size: 1.1rem;
-  line-height: 1.4;
+.opening {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  min-height: 100%;
+  gap: 0.2rem;
+}
+
+.opening-title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 2rem;
+  line-height: 1.22;
+  margin: 0 0 0.8rem 0;
+  max-width: 22ch;
+}
+
+.opening-sub {
+  margin: 0 0 1.9rem 0;
+  color: var(--fg-dim);
+  font-size: 0.92rem;
+  max-width: 44ch;
+  line-height: 1.55;
+}
+
+.opening-kicker {
+  margin-bottom: 0.7rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.opening .criteria-tiles {
+  width: 100%;
+}
+
+.opening .scroll-hint {
+  margin-top: 1.7rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .criteria-tiles {
@@ -233,7 +270,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 10rem;
+  min-height: 7.5rem;
   animation-delay: var(--tile-delay);
 }
 
@@ -490,55 +527,6 @@ body {
   flex: 0 0 auto;
   width: 13px;
   height: 13px;
-}
-
-/* ---------- title card over the graphic ---------- */
-
-.title-card {
-  position: absolute;
-  inset: 0;
-  z-index: 8;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2.5rem;
-  /* Opaque. It used to be a translucent gradient, which was invisible while
-     the page opened mid-scroll; now that the story owns the viewport it opens
-     at scroll 0 and the first beat's cards showed straight through it. */
-  background: var(--panel);
-  transition: opacity 0.7s ease, visibility 0.7s ease;
-}
-
-.title-card h1 {
-  font-family: var(--serif);
-  font-weight: 600;
-  font-size: 2rem;
-  line-height: 1.22;
-  margin: 0 0 0.8rem 0;
-  max-width: 20ch;
-}
-
-.title-card p {
-  margin: 0;
-  color: var(--fg-dim);
-  font-size: 0.92rem;
-  max-width: 42ch;
-  line-height: 1.55;
-}
-
-.title-card .scroll-hint {
-  margin-top: 1.6rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.title-card.is-hidden {
-  opacity: 0;
-  visibility: hidden;
 }
 
 /* ---------- SVG element styling ---------- */
@@ -1116,16 +1104,21 @@ body {
     font-size: 14px;
   }
 
-  .title-card h1 {
+  .opening-title {
     font-size: 1.3rem;
   }
 
-  .title-card p {
+  .opening-sub {
     font-size: 0.78rem;
+    margin-bottom: 1.2rem;
   }
 
-  .title-card .scroll-hint {
+  .opening .scroll-hint {
     margin-top: 1rem;
+  }
+
+  .opening .criteria-tiles {
+    grid-template-columns: 1fr;
   }
 }
 
