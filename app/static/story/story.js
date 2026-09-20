@@ -214,6 +214,7 @@
       stat: null,
       chip: null,
       lens: null,
+      decision: true,
       actions: [
         { label: "Open the Trade-off Explorer", path: "Trade-off_Explorer", primary: true },
         { label: "Ask the AI Analyst", path: "AI_Analyst", primary: false },
@@ -775,10 +776,10 @@
         // Cells below k lost their dots a beat earlier, at the suppression
         // step; the quiet closing beats keep the grid as a calm backdrop.
         ring = "none";
-        if (cellCount >= data.k && !state.quiet) {
+        if (cellCount >= data.k) {
           pos = barPosition(dot, scene);
           radius = 2.6;
-          opacity = 0.9;
+          opacity = state.quiet ? 0.45 : 0.9;
         } else {
           opacity = 0;
         }
@@ -2254,7 +2255,7 @@
 
   function renderChapterOverlay(step, data) {
     var overlay = document.getElementById("chapter-overlay");
-    if (!step.lawCards && !step.criteriaTiles && !step.compliance) {
+    if (!step.lawCards && !step.criteriaTiles && !step.compliance && !step.decision) {
       overlay.hidden = true;
       overlay.innerHTML = "";
       return;
@@ -2286,6 +2287,61 @@
         '</div>';
       return;
     }
+    if (step.decision) {
+      // The closing frame. Every number is read from story_data.json: the
+      // dials we chose on the left, what they bought on the right.
+      var dials = [
+        ["k = " + data.k, "distinct subscribers behind every published group"],
+        ["\u03b5 = " + data.epsilon, "calibrated noise on every published count"],
+        [data.time_bucket + " min", "time resolution, down from one minute"],
+        [data.n_provinces + " provinces", "the coarsest location fallback"],
+      ];
+      var bought = [
+        [
+          data.criteria_met + " / " + data.criteria_total,
+          "criteria met \u2014 isolation, linkage, inference",
+        ],
+        [data.u1 + "%", "of cells keep download speed within " + data.u1_tolerance + "%"],
+        [data.a6 + "%", "membership guess, against a 50% coin flip"],
+        [
+          // The text pane formats through `display`; this overlay reads `data`
+          // straight, so it does its own grouping.
+          Number(data.n_published_cells).toLocaleString("en-US") + " cells",
+          "published, a median of " + data.median_cell_subscribers + " subscribers each",
+        ],
+      ];
+
+      function decideColumn(kicker, items) {
+        return (
+          '<div class="decide-col"><div class="decide-kicker">' +
+          escapeHtml(kicker) +
+          "</div>" +
+          items
+            .map(function (item, index) {
+              return (
+                '<div class="decide-item" style="--row-delay:' +
+                index * 90 +
+                'ms"><span class="decide-value">' +
+                escapeHtml(String(item[0])) +
+                '</span><span class="decide-label">' +
+                escapeHtml(String(item[1])) +
+                "</span></div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        );
+      }
+
+      overlay.innerHTML =
+        '<div class="decide-card">' +
+        decideColumn("What we set", dials) +
+        decideColumn("What it bought", bought) +
+        '</div><div class="decide-foot">No setting is simply correct \u2014 move the dials ' +
+        "and both sides move with them.</div>";
+      return;
+    }
+
     var rows = data.compliance_rows || [];
     var measuredCount = rows.filter(function (row) {
       return String(row.evidence_tag).toUpperCase() === "MEASURED";

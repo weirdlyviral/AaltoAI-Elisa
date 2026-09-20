@@ -392,6 +392,63 @@ body {
   }
 }
 
+/* ---------- decide: the closing frame ---------- */
+
+.decide-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem;
+  align-content: center;
+  min-height: calc(100% - 4rem);
+}
+
+.decide-kicker {
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+}
+
+.decide-item {
+  border-top: 1px solid var(--border-soft);
+  padding: 0.7rem 0;
+  animation: chapter-card-in 0.5s ease var(--row-delay) both;
+}
+
+.decide-value {
+  display: block;
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--fg);
+}
+
+/* The right-hand column is the payoff, so it carries the accent. */
+.decide-col:last-child .decide-value {
+  color: var(--accent);
+}
+
+.decide-label {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.decide-foot {
+  margin-top: 1.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-soft);
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--fg-dim);
+}
+
 /* ---------- legend ---------- */
 
 /* A strip above the graphic rather than an overlay inside it: the plot's
