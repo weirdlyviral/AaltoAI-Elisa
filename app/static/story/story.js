@@ -1594,6 +1594,62 @@
 
   var VERDICT_CLASS = { pass: "is-pass", residual: "is-residual", fail: "is-fail" };
 
+  /** Flow an SVG text node onto up to maxLines lines. SVG does no wrapping of
+     its own, so a long sentence either overflows or gets ellipsised by
+     fitText; this measures word by word and emits one tspan per line,
+     ellipsising only what still will not fit. */
+  function wrapText(selection, maxWidth, maxLines, lineHeight) {
+    var SVG_NS = "http://www.w3.org/2000/svg";
+    selection.each(function () {
+      var node = this;
+      var full = (node.textContent || "").trim();
+      if (!full) return;
+      var x = node.getAttribute("x");
+      var y = parseFloat(node.getAttribute("y")) || 0;
+      node.textContent = "";
+
+      var probe = document.createElementNS(SVG_NS, "tspan");
+      node.appendChild(probe);
+
+      var words = full.split(/\s+/);
+      var lines = [];
+      var current = "";
+      var index = 0;
+      while (index < words.length && lines.length < maxLines) {
+        var candidate = current ? current + " " + words[index] : words[index];
+        probe.textContent = candidate;
+        if (current && probe.getComputedTextLength() > maxWidth) {
+          lines.push(current);
+          current = "";
+        } else {
+          current = candidate;
+          index += 1;
+        }
+      }
+      if (current && lines.length < maxLines) lines.push(current);
+
+      if (index < words.length && lines.length) {
+        // Words left over: ellipsise the last line we are allowed to draw.
+        var tail = lines[lines.length - 1];
+        probe.textContent = tail + "…";
+        while (tail.length > 4 && probe.getComputedTextLength() > maxWidth) {
+          tail = tail.slice(0, -4).replace(/[\s,;.]+$/, "");
+          probe.textContent = tail + "…";
+        }
+        lines[lines.length - 1] = tail + "…";
+      }
+
+      node.removeChild(probe);
+      lines.forEach(function (line, lineIndex) {
+        var tspan = document.createElementNS(SVG_NS, "tspan");
+        tspan.setAttribute("x", x);
+        tspan.setAttribute("y", y + lineIndex * lineHeight);
+        tspan.textContent = line;
+        node.appendChild(tspan);
+      });
+    });
+  }
+
   /** Trim an SVG text node until it fits, measuring rather than guessing. */
   function fitText(selection, maxWidth) {
     selection.each(function () {
@@ -1862,12 +1918,14 @@
           var order = { fail: 0, residual: 1, pass: 2 };
           return (order[a.status] ?? 3) - (order[b.status] ?? 3);
         })[0];
+      // rowH is 104 and the why starts 26 below the name, so three 17-unit
+      // lines still clear the next row's rule at y + 80.
       group
         .select("text.score-why")
         .attr("x", left)
         .attr("y", y + 26)
         .text((worst || {}).why || "")
-        .call(fitText, VB_W - left - 30);
+        .call(wrapText, VB_W - left - 30, 3, 17);
 
       columns.forEach(function (column) {
         var cell = item[column.key] || {};
