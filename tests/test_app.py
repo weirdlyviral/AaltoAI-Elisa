@@ -267,3 +267,30 @@ def test_tradeoff_grid_passes_the_leak_guard():
     from src import safety
 
     assert safety.check_file(APP_DIR.parent / "outputs" / "tradeoff_grid.json") == []
+
+
+def test_chart_click_applies_its_config_to_the_controls():
+    """A click is handled after the controls are drawn, so it parks the config
+    under pending_* and the next run applies it. Writing the widget keys directly
+    from the handler silently loses to the widget's own stored value."""
+    explorer = APP_DIR / "pages" / "1_Trade-off_Explorer.py"
+
+    at = AppTest.from_file(str(explorer))
+    at.run()
+    assert at.exception == []
+    first_k = at.session_state["slider_k"]
+
+    # AppTest reports a select_slider's options as formatted strings, so take the
+    # candidate k from the grid itself, in its real type.
+    from app.lib import data
+
+    grid, _ = data.load_tradeoff_grid()
+    other_k = next(e["config"]["k"] for e in grid if e["config"]["k"] != first_k)
+
+    at.session_state["pending_slider_k"] = other_k
+    at.run()
+
+    assert at.exception == []
+    assert at.session_state["slider_k"] == other_k
+    assert at.select_slider[0].value == other_k
+    assert "pending_slider_k" not in at.session_state

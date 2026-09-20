@@ -36,10 +36,22 @@ epsilons_raw = sorted({entry["config"]["epsilon"] for entry in grid if entry["co
 epsilons = epsilons_raw + ["None"]
 
 
+CONTROL_KEYS = ("slider_k", "slider_tb", "slider_am", "slider_eps")
+
 if "slider_k" not in st.session_state: st.session_state.slider_k = ks[0]
 if "slider_tb" not in st.session_state: st.session_state.slider_tb = time_buckets[0]
 if "slider_am" not in st.session_state: st.session_state.slider_am = area_modes[0]
 if "slider_eps" not in st.session_state: st.session_state.slider_eps = epsilons[0]
+
+# A click on the chart is handled at the BOTTOM of the script, by which point the
+# controls have already been drawn and their keys are owned by the widgets - a
+# write there is overwritten by the widget's own stored value on the next run. So
+# the click parks its config under pending_* and reruns, and it is applied here,
+# before the widgets exist, which is the one place a widget key can be set.
+for _key in CONTROL_KEYS:
+    _pending = f"pending_{_key}"
+    if _pending in st.session_state:
+        st.session_state[_key] = st.session_state.pop(_pending)
 
 y_axis_options = {
     "A1 Row Uniqueness (Record)": "a1_uniqueness_pct",
@@ -198,10 +210,10 @@ with main_pane:
                st.session_state.slider_eps != c_eps:
 
                
-                st.session_state.slider_k = int(clicked_config["k"])
-                st.session_state.slider_tb = int(clicked_config["time_bucket"])
-                st.session_state.slider_am = clicked_config["area_mode"]
-                st.session_state.slider_eps = c_eps
+                st.session_state.pending_slider_k = int(clicked_config["k"])
+                st.session_state.pending_slider_tb = int(clicked_config["time_bucket"])
+                st.session_state.pending_slider_am = str(clicked_config["area_mode"])
+                st.session_state.pending_slider_eps = c_eps
                 st.rerun()
 
     st.caption("The ringed, larger point is the active configuration. Click any point to jump to it.")
