@@ -16,6 +16,9 @@
 [data-testid="stAppDeployButton"],
 [data-testid="stDecoration"],
 #MainMenu,
+[data-testid="stHeader"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebar"],
 footer {
   display: none !important;
   visibility: hidden !important;
@@ -38,8 +41,7 @@ footer {
 
 html,
 body,
-[data-testid="stAppViewContainer"],
-[class*="st-"] {
+[data-testid="stAppViewContainer"] {
   font-family: var(--aas-sans);
 }
 
@@ -333,3 +335,9 @@ h3 {
   border-top: 1px solid var(--border-soft);
   z-index: 999;
 }
+
+/* Pull the segmented control up closer to the header */
+[data-testid="stSegmentedControl"] {
+  margin-top: -1rem;
+}
+

@@ -70,10 +70,12 @@ def run_agent(mode: str, question: str, history: list = None) -> dict:
             '{"action": "query_aggregate", "filters": {"province": "Uusimaa"}, "group_by": ["radio_access_type"], "metrics": ["tp_dl_avg_median"]}\n\n'
             "Available metrics: tp_dl_avg_median, tp_ul_avg_median, cont_rtt_radio_avg_median, http_response_time_avg_median, http_sr_avg_median.\n"
             "If you have the answer, reply with:\n"
-            '{"answer": "Your short answer here."}\n\n'
+            '{"answer": "Your short answer here.", "plot_type": "bar", "x_axis": "col1", "y_axis": "col2"}\n\n'
+            'The "plot_type", "x_axis", and "y_axis" fields are OPTIONAL. Include them if the user asked for a plot. Use "bar", "line", "point", or "arc" for plot_type.\n'
             "CRITICAL RULES:\n"
             "1. You MUST include this exact caveat line in your final answer: 'Caveat: Data contains DP noise, cells under 10 subscribers are suppressed, and means are not supported for QoE metrics.'\n"
-            "2. Output ONLY the JSON block, no markdown formatting like ```json ... ```."
+            "2. Output ONLY the JSON block, no markdown formatting like ```json ... ```.\n"
+            "3. DO NOT output ANY sequence of 10 or more digits in your answer string. Round all numbers to 2 decimal places.\n"
         )
         history_text = ""
         if history:
@@ -110,9 +112,16 @@ def run_agent(mode: str, question: str, history: list = None) -> dict:
                 
             if "answer" in cmd:
                 ans = {"answer": cmd["answer"], "tool_calls": tool_calls}
-                if "chart" in cmd and isinstance(cmd["chart"], dict) and last_df is not None:
-                    chart_spec = cmd["chart"]
-                    chart_spec["data"] = {"values": last_df.to_dict(orient="records")}
+                if "plot_type" in cmd and "x_axis" in cmd and "y_axis" in cmd and last_df is not None:
+                    # Manually construct Vega-Lite spec to prevent LLM hallucinating floats!
+                    chart_spec = {
+                        "mark": cmd["plot_type"],
+                        "encoding": {
+                            "x": {"field": cmd["x_axis"], "type": "nominal"},
+                            "y": {"field": cmd["y_axis"], "type": "quantitative"}
+                        },
+                        "data": {"values": last_df.to_dict(orient="records")}
+                    }
                     ans["chart"] = chart_spec
                 return ans
             elif cmd.get("action") == "query_aggregate":

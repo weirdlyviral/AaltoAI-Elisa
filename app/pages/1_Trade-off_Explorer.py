@@ -115,10 +115,20 @@ with main_pane:
 
     with colA:
         st.metric("Utility (U1)", f"{match['metrics'].get('u1_pct_within_5pct', 0):.1f}%", help=metric_help_texts["U1"])
+    with colA:
+        st.metric("Utility (U1)", f"{match['metrics'].get('u1_pct_within_5pct', 0):.1f}%", help=metric_help_texts["U1"])
 
     with colB:
         st.metric(selected_y_label.split(" (")[0], f"{match['metrics'].get(selected_y_key, 0):.1f}%", help=metric_help_texts[selected_y_label])
+    with colB:
+        st.metric(selected_y_label.split(" (")[0], f"{match['metrics'].get(selected_y_key, 0):.1f}%", help=metric_help_texts[selected_y_label])
 
+    with colC:
+        current_risk = match["metrics"].get(selected_y_key, 0)
+        if current_risk <= current_threshold:
+            st.success(f"✅ **PASSES**\n\nRisk is below {current_threshold}%.")
+        else:
+            st.error(f"🚫 **FAILS**\n\nExceeds {current_threshold}% threshold.")
     with colC:
         current_risk = match["metrics"].get(selected_y_key, 0)
         if current_risk <= current_threshold:
@@ -129,7 +139,10 @@ with main_pane:
 
     # --- Scatter Plot of All Configs ---
     st.subheader("Trade-off Spectrum")
+    # --- Scatter Plot of All Configs ---
+    st.subheader("Trade-off Spectrum")
 
+    df_grid = []
     df_grid = []
 
 
@@ -168,9 +181,32 @@ with main_pane:
         tooltip=['k', 'epsilon', 'time_bucket', 'area_mode', 'utility', 'risk', 'releasable'],
         opacity=alt.condition(selection, alt.value(1), alt.value(0.35)),
     ).add_params(selection).properties(height=350)
+    # One chart, not a layered pair: Streamlit refuses selections on multi-view
+    # charts, so the "current config" highlight is an encoding on the same marks.
+    selection = alt.selection_point(name='selector', fields=['id'])
+    scatter = alt.Chart(df_grid).mark_point(filled=True).encode(
+        x=alt.X('utility:Q', title='Utility (U1 headline %)', scale=alt.Scale(zero=False)),
+        y=alt.Y('risk:Q', title=f'Risk ({selected_y_label} %)', scale=alt.Scale(zero=False)),
+        color=alt.Color(
+            'releasable:N',
+            scale=alt.Scale(domain=['Yes', 'No'], range=[theme.PALETTE['pass'], theme.PALETTE['fail']]),
+            legend=alt.Legend(title='Releasable'),
+        ),
+        size=alt.condition('datum.is_selected', alt.value(400), alt.value(110)),
+        stroke=alt.condition('datum.is_selected', alt.value(theme.PALETTE['text']), alt.value('transparent')),
+        strokeWidth=alt.condition('datum.is_selected', alt.value(2), alt.value(0)),
+        tooltip=['k', 'epsilon', 'time_bucket', 'area_mode', 'utility', 'risk', 'releasable'],
+        opacity=alt.condition(selection, alt.value(1), alt.value(0.35)),
+    ).add_params(selection).properties(height=350)
 
     event = st.altair_chart(scatter, use_container_width=True, on_select="rerun")
+    event = st.altair_chart(scatter, use_container_width=True, on_select="rerun")
 
+    sel_list = []
+    if hasattr(event, "selection") and hasattr(event.selection, "selector"):
+        sel_list = event.selection.selector
+    elif isinstance(event, dict) and "selection" in event and "selector" in event["selection"]:
+        sel_list = event["selection"]["selector"]
     sel_list = []
     if hasattr(event, "selection") and hasattr(event.selection, "selector"):
         sel_list = event.selection.selector
@@ -201,4 +237,5 @@ with main_pane:
                 st.session_state.slider_eps = c_eps
                 st.rerun()
 
+    st.caption("The ringed, larger point is the active configuration. Click any point to jump to it.")
     st.caption("The ringed, larger point is the active configuration. Click any point to jump to it.")

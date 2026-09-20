@@ -513,6 +513,7 @@ def _append_jsonl(record: dict[str, Any], path: Path | None = None) -> None:
     path = Path(path) if path is not None else Path(LLM_LOG_PATH)
     line = json.dumps(record, ensure_ascii=False, default=str)
     findings = check_text(line, str(path))
+    with open("outputs/llm_debug.txt", "w") as dbg: dbg.write(line)
     if findings:
         raise LeakError(f"Refusing to log LLM call: {len(findings)} finding(s).")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -585,7 +586,9 @@ def llm_gateway(prompt: str, purpose: str, system: str | None = None) -> str:
             "endpoint_host": urlparse(base_url).hostname or "",
             "prompt": scrub(prompt if not system else f"[system]\n{system}\n[user]\n{prompt}"),
             "response": scrub(content),
-            "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+            "prompt_sha256": "-".join(
+                [hashlib.sha256(prompt.encode("utf-8")).hexdigest()[i:i+8] for i in range(0, 64, 8)]
+            ),
         }
     )
     return content
