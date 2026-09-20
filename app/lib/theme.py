@@ -158,7 +158,12 @@ def _render_nav(active: str = "") -> None:
     def entry(path: str, label: str) -> None:
         if label and label == active:
             st.markdown(
-                f"<span class='aas-nav-current'>{label}</span>", unsafe_allow_html=True
+                # a div, not a span: markdown wraps inline HTML in a <p>
+                # with margins of its own, which lifted the label off the
+                # baseline the links sit on.
+                f"<div class='aas-nav-current'>"
+                f"<span class='aas-nav-label'>{label}</span></div>",
+                unsafe_allow_html=True,
             )
             return
         page_link(path, label)

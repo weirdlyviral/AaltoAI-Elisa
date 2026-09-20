@@ -61,22 +61,47 @@ body,
   display: none !important;
 }
 
-[data-testid="stPageLink-NavLink"] {
+/* Nav entries. A link and the current-page marker are two different DOM
+   shapes -- Streamlit wraps a link label in a markdown <p>, the marker is a
+   bare span -- so every metric that decides the box (font, line-height,
+   padding, height) is declared for both, and hover changes colour only.
+   Anything that resizes on hover or on becoming current shifts the whole row. */
+[data-testid="stPageLink-NavLink"],
+.aas-nav-current {
   align-items: center;
   background: transparent !important;
   border: 1px solid transparent;
   border-radius: 6px !important;
   box-shadow: none !important;
-  color: var(--muted);
+  box-sizing: border-box;
   display: flex;
+  font-family: var(--aas-sans);
   font-size: 0.86rem;
   font-weight: 600;
+  height: 2.35rem;
   justify-content: center;
-  min-height: 2.35rem;
+  line-height: 1.2;
   padding: 0.45rem 0.75rem;
   text-decoration: none;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   width: 100%;
+}
+
+[data-testid="stPageLink-NavLink"] {
+  color: var(--muted);
+}
+
+/* Streamlit's own label typography inside the link, neutralised so the link
+   and the marker render the same text on the same baseline. */
+[data-testid="stPageLink-NavLink"] [data-testid="stMarkdownContainer"],
+[data-testid="stPageLink-NavLink"] p {
+  color: inherit;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 [data-testid="stPageLink-NavLink"]:hover {
@@ -85,18 +110,17 @@ body,
   color: var(--fg);
 }
 
-/* The nav entry for the page you are on: same metrics as the link above, so
-   the row does not shift when the marker replaces a link. */
+/* The page you are on. The rule sits under the label, not under the whole
+   column, and is a child border so it costs the box no height. */
 .aas-nav-current {
-  align-items: center;
-  border-bottom: 2px solid var(--accent);
   color: var(--accent);
-  display: flex;
-  font-size: 0.86rem;
   font-weight: 700;
-  justify-content: center;
-  min-height: 2.35rem;
-  padding: 0.45rem 0.75rem;
+}
+
+.aas-nav-current .aas-nav-label {
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+  padding-bottom: 2px;
 }
 
 /* Section label inside the Explorer's in-page control panel. */
