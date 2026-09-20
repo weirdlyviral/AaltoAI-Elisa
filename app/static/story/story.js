@@ -161,11 +161,11 @@
       chapter: 5,
       headline: "The scoreboard",
       body:
-        "Scored against an attacker stronger than our defined recipient: the row-level " +
-        "release fails, the aggregate release we ship holds.",
+        "Three questions, taken from the EDPB anonymisation criteria and asked against an " +
+        "attacker stronger than the recipient we defined.",
       stat: {
         value: "{criteria_met} / {criteria_total}",
-        label: "criteria met by the aggregate release — one of them a named residual",
+        label: "criteria met by the release we ship",
       },
       chip: "verdicts.py · rules mirrored in risk_assessment.md",
       lens: null,
@@ -1813,50 +1813,26 @@
     });
   }
 
+  // Three questions, one release, one answer each. The full matrix - both
+  // releases scored under both attacker models - stays in verdicts.py and in
+  // docs/risk_assessment.md, where there is room to define its terms.
+  var SCORE_QUESTIONS = {
+    no_record_isolation: "Can anyone be singled out?",
+    no_linkage: "Can two rows be linked?",
+    no_inference: "Can an attribute be inferred?",
+  };
+  var SCORE_ANSWER = { pass: "NO", residual: "ALMOST", fail: "YES" };
+
   function drawScoreboard(gfx, state, data, duration) {
     var rows = state.scoreboard ? data.criteria || [] : [];
     var left = 34;
-    // One attacker model on the slide, not two. The contextual model - our
-    // defined recipient - passes everything on both releases, so it is the
-    // stricter "simplified" model that carries the decision. Both models stay
-    // in verdicts.py and in docs/risk_assessment.md, where there is room.
-    var columns = [
-      { key: "record_simplified", x: 452, title: "Record", sub: "not shipped", muted: true },
-      { key: "aggregate_simplified", x: 600, title: "Aggregate", sub: "what we ship", muted: false },
-    ];
-    var top = 176;
+    var chipX = 584;
+    var chipW = 116;
+    var top = 214;
     var rowH = 104;
 
     var header = state.scoreboard
-      ? columns
-          .map(function (column) {
-            return {
-              key: "sub-" + column.key,
-              x: column.x,
-              text: column.sub,
-              sub: true,
-              muted: column.muted,
-            };
-          })
-          .concat(
-            columns.map(function (column) {
-              return {
-                key: "head-" + column.key,
-                x: column.x,
-                text: column.title,
-                sub: false,
-                muted: column.muted,
-              };
-            })
-          )
-          .concat([
-            {
-              key: "caption",
-              x: left,
-              text: "Verdicts under an attacker stronger than our defined recipient",
-              caption: true,
-            },
-          ])
+      ? [{ key: "head", text: "The aggregate release we ship" }]
       : [];
 
     gfx.layers.panel
@@ -1868,24 +1844,9 @@
         function (enter) {
           return enter
             .append("text")
-            .attr("class", function (item) {
-              return (
-                "score-header" +
-                (item.sub ? " is-sub" : "") +
-                (item.caption ? " is-caption" : "") +
-                (item.muted ? " is-muted" : "")
-              );
-            })
-            .attr("x", function (item) {
-              return item.x;
-            })
-            .attr("y", function (item) {
-              if (item.caption) return top - 88;
-              return item.sub ? top - 26 : top - 52;
-            })
-            .attr("text-anchor", function (item) {
-              return item.caption ? "start" : "middle";
-            })
+            .attr("class", "score-header")
+            .attr("x", left)
+            .attr("y", top - 74)
             .text(function (item) {
               return item.text;
             })
@@ -1912,110 +1873,95 @@
     entered.append("line").attr("class", "score-rule");
     entered.append("text").attr("class", "score-name");
     entered.append("text").attr("class", "score-why");
-    columns.forEach(function (column) {
-      entered.append("rect").attr("class", "score-chip chip-" + column.key);
-      entered.append("text").attr("class", "score-chip-text text-" + column.key);
-    });
+    entered.append("rect").attr("class", "score-chip");
+    entered.append("text").attr("class", "score-chip-text");
 
     var merged = entered.merge(rowSel);
 
     merged.each(function (item, index) {
       var group = d3.select(this);
       var y = top + index * rowH;
+      // The release we ship, under the stricter of the two attacker models.
+      var cell = item.aggregate_simplified || {};
 
       group.select("line.score-rule")
         .attr("x1", left)
         .attr("x2", VB_W - 24)
-        .attr("y1", y - 24)
-        .attr("y2", y - 24);
+        .attr("y1", y - 30)
+        .attr("y2", y - 30);
 
-      group.select("text.score-name").attr("x", left).attr("y", y + 4).text(item.label);
+      group
+        .select("text.score-name")
+        .attr("x", left)
+        .attr("y", y + 6)
+        .text(SCORE_QUESTIONS[item.criterion] || item.label);
 
-      // One reasoning line per criterion: the worst verdict across the four
-      // cells is the one worth explaining.
-      var worst = columns
-        .map(function (column) {
-          return item[column.key] || {};
-        })
-        .sort(function (a, b) {
-          var order = { fail: 0, residual: 1, pass: 2 };
-          return (order[a.status] ?? 3) - (order[b.status] ?? 3);
-        })[0];
-      // rowH is 104 and the why starts 26 below the name, so three 17-unit
-      // lines still clear the next row's rule at y + 80.
+      // Only an answer that is not a flat "no" needs explaining, so the beat
+      // carries one caveat line rather than one per row.
       group
         .select("text.score-why")
         .attr("x", left)
-        .attr("y", y + 26)
-        .text((worst || {}).why || "")
-        .call(wrapText, VB_W - left - 30, 3, 17);
+        .attr("y", y + 32)
+        .text(cell.status === "pass" ? "" : cell.why || "")
+        .call(wrapText, chipX - chipW / 2 - left - 20, 2, 17);
 
-      columns.forEach(function (column) {
-        var cell = item[column.key] || {};
-        var chipW = 104;
-        var muted = column.muted ? " is-muted" : "";
-        group.select("rect.chip-" + column.key)
-          .attr("x", column.x - chipW / 2)
-          .attr("y", y - 14)
-          .attr("width", chipW)
-          .attr("height", 26)
-          .attr("rx", 13)
-          .attr(
-            "class",
-            "score-chip chip-" + column.key + " " + (VERDICT_CLASS[cell.status] || "") + muted
-          );
-        group.select("text.text-" + column.key)
-          .attr("class", "score-chip-text text-" + column.key + muted)
-          .attr("x", column.x)
-          .attr("y", y + 4)
-          .attr("text-anchor", "middle")
-          .text(cell.status || "");
-      });
+      group.select("rect.score-chip")
+        .attr("x", chipX - chipW / 2)
+        .attr("y", y - 16)
+        .attr("width", chipW)
+        .attr("height", 30)
+        .attr("rx", 15)
+        .attr("class", "score-chip " + (VERDICT_CLASS[cell.status] || ""));
+      group.select("text.score-chip-text")
+        .attr("x", chipX)
+        .attr("y", y + 6)
+        .attr("text-anchor", "middle")
+        .text(SCORE_ANSWER[cell.status] || "");
 
       group.transition("score").delay(index * 120).duration(duration).attr("opacity", 1);
     });
 
-    // A2's trajectory number is why linkage was removed, not a verdict on a
-    // release that keeps no linkable records. It gets its own line.
-    var counterfactual =
-      state.scoreboard && data.linkage_counterfactual ? [data.linkage_counterfactual] : [];
+    // Why the record release is not the one being scored here.
+    var foot = rows.length
+      ? [
+          "The row-level alternative fails the first question on heavy users.",
+          "That is why we ship counts, not rows.",
+        ]
+      : [];
 
-    var noteSel = gfx.layers.panel
-      .selectAll("g.counterfactual")
-      .data(counterfactual, function (item) {
-        return item.headline;
-      });
-
-    noteSel.exit().transition("score").duration(duration / 2).attr("opacity", 0).remove();
-
-    var noteEntered = noteSel.enter().append("g").attr("class", "counterfactual").attr("opacity", 0);
-    noteEntered.append("rect").attr("class", "counterfactual-box");
-    noteEntered.append("text").attr("class", "counterfactual-title");
-    noteEntered.append("text").attr("class", "counterfactual-body");
-
-    var noteY = top + rows.length * rowH - 10;
-    var noteMerged = noteEntered.merge(noteSel);
-    noteMerged.select("rect.counterfactual-box")
-      .attr("x", left)
-      .attr("y", noteY)
-      .attr("width", VB_W - left - 24)
-      .attr("height", 74)
-      .attr("rx", 8);
-    noteMerged.select("text.counterfactual-title")
-      .attr("x", left + 16)
-      .attr("y", noteY + 26)
-      .text("Why we removed linkage — " + counterfactualHeadline(counterfactual))
-      .call(fitText, VB_W - left - 56);
-    noteMerged.select("text.counterfactual-body")
-      .attr("x", left + 16)
-      .attr("y", noteY + 50)
-      .text("Not a verdict: neither release keeps a key, so the attack has nothing to join on.")
-      .call(fitText, VB_W - left - 56);
-    noteMerged.transition("score").delay(rows.length * 120).duration(duration).attr("opacity", 1);
-  }
-
-  function counterfactualHeadline(list) {
-    return list.length ? list[0].headline : "";
+    gfx.layers.panel
+      .selectAll("text.score-foot")
+      .data(foot, function (line) {
+        return line;
+      })
+      .join(
+        function (enter) {
+          return enter
+            .append("text")
+            .attr("class", "score-foot")
+            .attr("x", left)
+            .attr("y", function (line, index) {
+              return top + rows.length * rowH + 6 + index * 22;
+            })
+            .text(function (line) {
+              return line;
+            })
+            .attr("opacity", 0)
+            .call(function (sel) {
+              sel
+                .transition("score")
+                .delay(rows.length * 120)
+                .duration(duration)
+                .attr("opacity", 1);
+            });
+        },
+        function (update) {
+          return update;
+        },
+        function (exit) {
+          return exit.transition("score").duration(duration / 2).attr("opacity", 0).remove();
+        }
+      );
   }
 
   function drawUtilityBars(gfx, state, data, duration) {
@@ -2560,10 +2506,14 @@
           '<div class="step-actions">' +
           step.actions
             .map(function (action) {
+              // A new tab, not _top: Streamlit sandboxes the story's iframe
+              // without allow-top-navigation, so a _top link is ignored and
+              // the button does nothing. allow-popups is granted, so this
+              // works embedded, and it is harmless standalone.
               return (
                 '<a class="step-button' +
                 (action.primary ? "" : " is-secondary") +
-                '" target="_top" href="' +
+                '" target="_blank" rel="noopener" href="' +
                 appBaseUrl() +
                 "/" +
                 action.path +

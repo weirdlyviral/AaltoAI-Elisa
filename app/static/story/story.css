@@ -724,6 +724,13 @@ body {
   font-family: var(--serif);
 }
 
+/* Why the release we are not scoring here is the one we did not ship. */
+.score-foot {
+  fill: var(--muted);
+  font-size: calc(var(--u) * 13);
+  font-family: var(--sans);
+}
+
 .score-why {
   fill: var(--muted);
   font-size: calc(var(--u) * 13);
@@ -1248,49 +1255,6 @@ body {
   animation: target-pulse 1.6s ease-in-out infinite;
 }
 
-.score-header.is-sub {
-  fill: var(--fg-dim);
-  text-transform: none;
-  letter-spacing: 0.02em;
-}
-
-/* States the attacker model the whole grid is scored under. */
-.score-header.is-caption {
-  fill: var(--muted);
-  font-size: calc(var(--u) * 13);
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-/* The record release is shown for comparison, not recommended: its column
-   recedes so the eye lands on the release we ship. */
-.score-header.is-muted {
-  opacity: 0.55;
-}
-
-.score-chip.is-muted,
-.score-chip-text.is-muted {
-  opacity: 0.5;
-}
-
-.counterfactual-box {
-  fill: color-mix(in srgb, var(--ring-risk) 7%, transparent);
-  stroke: color-mix(in srgb, var(--ring-risk) 35%, transparent);
-  stroke-width: 1;
-}
-
-.counterfactual-title {
-  fill: var(--fg);
-  font-size: calc(var(--u) * 14);
-  font-weight: 600;
-  font-family: var(--sans);
-}
-
-.counterfactual-body {
-  fill: var(--fg-dim);
-  font-size: calc(var(--u) * 13);
-  font-family: var(--sans);
-}
 
 .utility-column {
   fill: var(--muted);
